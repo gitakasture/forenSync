@@ -155,6 +155,7 @@ def _register_blueprints(app: Flask) -> None:
     from routes.cases import cases_bp
     from routes.plugins import plugins_bp
     from routes.settings import settings_bp
+    from routes.users import users_bp
 
     app.register_blueprint(health_bp,   url_prefix="/api/v1")
     app.register_blueprint(upload_bp,   url_prefix="/api/v1")
@@ -162,9 +163,10 @@ def _register_blueprints(app: Flask) -> None:
     app.register_blueprint(cases_bp,    url_prefix="/api/v1")
     app.register_blueprint(plugins_bp,  url_prefix="/api/v1")
     app.register_blueprint(settings_bp, url_prefix="/api/v1")
+    app.register_blueprint(users_bp,    url_prefix="/api/v1")
 
     app.logger.debug(
-        "Blueprints registered: health, upload, auth, cases, plugins, settings"
+        "Blueprints registered: health, upload, auth, cases, plugins, settings, users"
     )
 
 
