@@ -1,4 +1,4 @@
-# Web framework
+﻿# Web framework
 Flask==3.1.3
 
 # CORS support - allows the React frontend (Vite on :5173) to call this API
@@ -7,18 +7,15 @@ flask-cors==6.0.5
 # Environment variable loading from .env files
 python-dotenv==1.2.2
 
-# Database ORM (SQLAlchemy integration for Flask)
-flask-sqlalchemy==3.1.1
-
-# PostgreSQL database driver
-psycopg2-binary==2.9.12
-
-# Supabase Python client (used for auth routes)
+# Supabase Python client - used for auth (register + login) against Supabase PostgreSQL
+# Install: pip install supabase
 supabase==2.15.1
 
-# WSGI server for production
-gunicorn==26.0.0
+# PostgreSQL driver (used internally by supabase client)
+psycopg2-binary==2.9.12
 
-# Werkzeug WSGI library
+# WSGI server for production (Linux/Mac - not used on Windows dev)
+gunicorn==23.0.0
+
+# Werkzeug is Flask underlying WSGI library (pinned to match Flask 3.x)
 Werkzeug==3.1.8
-
