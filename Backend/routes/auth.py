@@ -1,71 +1,132 @@
 """
-routes/auth.py — Authentication Blueprint (stub).
+routes/auth.py — Authentication Blueprint (Supabase backend).
 
 Endpoints:
-    POST /api/v1/auth/login     — Authenticate a user by org + user ID + role.
-    POST /api/v1/auth/register  — Register a new organization.
-
-Both endpoints perform real input validation and return the exact JSON
-shape the React frontend expects. Credential checking against a database
-is stubbed — see TODO markers for exact integration points.
-
-Request / Response contracts are documented on each view function.
+    POST /api/v1/auth/register  — Register a new organization + users in Supabase.
+    POST /api/v1/auth/login     — Authenticate a user against Supabase.
 """
 
+import os
 from flask import Blueprint, request, current_app
+from supabase import create_client, Client
 from utils.response import success_response, error_response
 from utils.validators import require_json_fields, validate_id_format
 
 auth_bp = Blueprint("auth", __name__)
 
 
-# ── POST /api/v1/auth/login ─────────────────────────────────────────────── #
+def get_supabase() -> Client:
+    """Return a Supabase client using env credentials."""
+    url = os.environ.get("SUPABASE_URL", "")
+    key = os.environ.get("SUPABASE_SERVICE_KEY", "")
+    if not url or not key:
+        raise EnvironmentError("SUPABASE_URL and SUPABASE_SERVICE_KEY must be set in .env")
+    return create_client(url, key)
 
+
+# ──────────────────────────────────────────────────────────────────────────
+# POST /api/v1/auth/register
+# Body: { orgName, orgId, orgHeadId, investigators: [{name, id}, ...] }
+# ──────────────────────────────────────────────────────────────────────────
+@auth_bp.post("/auth/register")
+def register():
+    body = request.get_json(silent=True) or {}
+
+    # Validate required fields
+    valid, errors = require_json_fields(request, ["orgName", "orgId", "orgHeadId"])
+    if not valid:
+        return error_response("Missing required fields.", 400, "Bad Request", errors)
+
+    org_id       = body["orgId"].strip()
+    org_name     = body["orgName"].strip()
+    head_id      = body["orgHeadId"].strip()
+    investigators = body.get("investigators", [])
+
+    # Validate ID formats
+    org_valid, org_err = validate_id_format(org_id, "ORG")
+    if not org_valid:
+        return error_response(f"Invalid orgId: {org_err}", 400, "Bad Request",
+                              [{"field": "orgId", "message": org_err}])
+
+    head_valid, head_err = validate_id_format(head_id, "HEAD")
+    if not head_valid:
+        return error_response(f"Invalid orgHeadId: {head_err}", 400, "Bad Request",
+                              [{"field": "orgHeadId", "message": head_err}])
+
+    try:
+        sb = get_supabase()
+
+        # Check org doesn't already exist
+        existing = sb.table("organizations").select("id").eq("org_id", org_id).execute()
+        if existing.data:
+            return error_response(
+                f"Organization ID '{org_id}' is already registered.",
+                409, "Conflict"
+            )
+
+        # Insert organization
+        org_result = sb.table("organizations").insert({
+            "org_id":  org_id,
+            "name":    org_name,
+            "head_id": head_id,
+        }).execute()
+
+        org_uuid = org_result.data[0]["id"]
+
+        # Insert the org head as a user
+        users_to_insert = [{
+            "user_id": head_id,
+            "name":    "Organization Head",
+            "role":    "head",
+            "org_id":  org_uuid,
+        }]
+
+        # Insert investigators
+        for inv in investigators:
+            inv_id   = inv.get("id", "").strip()
+            inv_name = inv.get("name", "").strip()
+            if inv_id and inv_name:
+                users_to_insert.append({
+                    "user_id": inv_id,
+                    "name":    inv_name,
+                    "role":    "investigator",
+                    "org_id":  org_uuid,
+                })
+
+        sb.table("users").insert(users_to_insert).execute()
+
+        current_app.logger.info("Registered org=%s head=%s", org_id, head_id)
+
+        return success_response(
+            data={
+                "orgId":         org_id,
+                "orgName":       org_name,
+                "orgHeadId":     head_id,
+                "investigators": investigators,
+            },
+            message="Organization registered successfully.",
+            status_code=201,
+        )
+
+    except EnvironmentError as e:
+        current_app.logger.error("Supabase config error: %s", e)
+        return error_response(str(e), 500, "Configuration Error")
+    except Exception as e:
+        current_app.logger.error("Register error: %s", e)
+        return error_response("Registration failed. Please try again.", 500, "Internal Server Error")
+
+
+# ──────────────────────────────────────────────────────────────────────────
+# POST /api/v1/auth/login
+# Body: { orgId, userId, role }
+# ──────────────────────────────────────────────────────────────────────────
 @auth_bp.post("/auth/login")
 def login():
-    """
-    Authenticate a user (stub — no DB lookup yet).
-
-    Request body (JSON):
-        {
-            "orgId":  "ORG-XXXX",   required
-            "userId": "INV-XXXX",   required  (INV- or HEAD- prefix)
-            "role":   "investigator" | "head"  required
-        }
-
-    Response (200):
-        {
-            "status":  "success",
-            "message": "Login successful.",
-            "data": {
-                "role":           "investigator",
-                "name":           "Aditi Rao",
-                "investigatorId": "INV-2291",
-                "orgId":          "ORG-4410",
-                "orgName":        "Sentinel Cyber Forensics"
-            }
-        }
-
-    TODO (auth phase):
-        Replace the stub return below with:
-            user = UserService.authenticate(org_id, user_id, role)
-            if not user:
-                return error_response("Invalid credentials.", 401, error="Unauthorized")
-            token = TokenService.generate(user)
-            return success_response(data={**user.to_dict(), "token": token})
-    """
     body = request.get_json(silent=True) or {}
-    current_app.logger.debug("Login attempt  orgId=%s  role=%s", body.get("orgId"), body.get("role"))
 
-    # ── Validate required fields ─────────────────────────────────────── #
     valid, errors = require_json_fields(request, ["orgId", "userId", "role"])
     if not valid:
-        return error_response(
-            message="Missing required fields.",
-            status_code=400,
-            error="Bad Request",
-            errors=errors,
-        )
+        return error_response("Missing required fields.", 400, "Bad Request", errors)
 
     org_id  = body["orgId"].strip()
     user_id = body["userId"].strip()
@@ -73,121 +134,67 @@ def login():
 
     if role not in ("investigator", "head"):
         return error_response(
-            message="role must be 'investigator' or 'head'.",
-            status_code=400,
-            error="Bad Request",
-            errors=[{"field": "role", "message": "Must be 'investigator' or 'head'."}],
+            "role must be 'investigator' or 'head'.", 400, "Bad Request",
+            [{"field": "role", "message": "Must be 'investigator' or 'head'."}]
         )
 
-    # ── TODO (database phase): look up real user ──────────────────────── #
-    # user = UserService.get_by_org_and_id(org_id=org_id, user_id=user_id, role=role)
-    # if not user:
-    #     return error_response("Invalid credentials.", 401, error="Unauthorized")
+    try:
+        sb = get_supabase()
 
-    # ── Stub response — mirrors mockData.js mockInvestigator shape ────── #
-    return success_response(
-        data={
-            "role":           role,
-            "name":           "Aditi Rao",                 # TODO: from DB user record
-            "investigatorId": user_id,
-            "orgId":          org_id,
-            "orgName":        "Sentinel Cyber Forensics",  # TODO: from DB org record
-        },
-        message="Login successful.",
-        status_code=200,
-    )
+        # 1. Look up the organization
+        org_result = sb.table("organizations") \
+            .select("id, org_id, name, head_id") \
+            .eq("org_id", org_id) \
+            .eq("is_active", True) \
+            .execute()
 
+        if not org_result.data:
+            return error_response(
+                f"Organization '{org_id}' not found.", 404, "Not Found"
+            )
 
-# ── POST /api/v1/auth/register ──────────────────────────────────────────── #
+        org      = org_result.data[0]
+        org_uuid = org["id"]
 
-@auth_bp.post("/auth/register")
-def register():
-    """
-    Register a new organization (stub — no DB insert yet).
+        # 2. Look up the user in that org with the correct role
+        user_result = sb.table("users") \
+            .select("user_id, name, role, status") \
+            .eq("org_id", org_uuid) \
+            .eq("user_id", user_id) \
+            .eq("role", role) \
+            .execute()
 
-    Request body (JSON):
-        {
-            "orgName":       "Sentinel Cyber Forensics",  required
-            "orgId":         "ORG-4410",                  required
-            "orgHeadId":     "HEAD-0001",                 required
-            "investigators": [                            optional
-                { "name": "Aditi Rao", "id": "INV-2291" }
-            ]
-        }
+        if not user_result.data:
+            return error_response(
+                "Invalid credentials. Check your Org ID, User ID, and role.",
+                401, "Unauthorized"
+            )
 
-    Response (201):
-        {
-            "status":  "success",
-            "message": "Organization registered successfully.",
-            "data": {
-                "orgId":         "ORG-4410",
-                "orgName":       "Sentinel Cyber Forensics",
-                "orgHeadId":     "HEAD-0001",
-                "investigators": [ ... ]
-            }
-        }
+        user = user_result.data[0]
 
-    TODO (database phase):
-        Replace the stub return below with:
-            if OrgService.exists(org_id):
-                return error_response("Org ID already taken.", 409, error="Conflict")
-            org = OrgService.create(org_name, org_id, org_head_id, investigators)
-            return success_response(data=org.to_dict(), status_code=201)
-    """
-    body = request.get_json(silent=True) or {}
-    current_app.logger.debug("Register attempt  orgId=%s", body.get("orgId"))
+        if user["status"] == "Inactive":
+            return error_response(
+                "This account is inactive. Contact your Organization Head.",
+                403, "Forbidden"
+            )
 
-    # ── Validate required fields ─────────────────────────────────────── #
-    valid, errors = require_json_fields(request, ["orgName", "orgId", "orgHeadId"])
-    if not valid:
-        return error_response(
-            message="Missing required fields.",
-            status_code=400,
-            error="Bad Request",
-            errors=errors,
+        current_app.logger.info("Login ok  org=%s  user=%s  role=%s", org_id, user_id, role)
+
+        return success_response(
+            data={
+                "role":           user["role"],
+                "name":           user["name"],
+                "investigatorId": user["user_id"],
+                "orgId":          org["org_id"],
+                "orgName":        org["name"],
+            },
+            message="Login successful.",
+            status_code=200,
         )
 
-    org_id     = body["orgId"].strip()
-    org_name   = body["orgName"].strip()
-    org_head   = body["orgHeadId"].strip()
-    investigators = body.get("investigators", [])
-
-    # ── ID format validation ─────────────────────────────────────────── #
-    org_valid, org_err = validate_id_format(org_id, "ORG")
-    if not org_valid:
-        return error_response(
-            message=f"Invalid orgId: {org_err}",
-            status_code=400,
-            error="Bad Request",
-            errors=[{"field": "orgId", "message": org_err}],
-        )
-
-    head_valid, head_err = validate_id_format(org_head, "HEAD")
-    if not head_valid:
-        return error_response(
-            message=f"Invalid orgHeadId: {head_err}",
-            status_code=400,
-            error="Bad Request",
-            errors=[{"field": "orgHeadId", "message": head_err}],
-        )
-
-    # ── TODO (database phase): check uniqueness and persist ──────────── #
-    # if OrgService.exists(org_id):
-    #     return error_response("Org ID already registered.", 409, error="Conflict")
-    # org = OrgService.create(
-    #     name=org_name, org_id=org_id,
-    #     head_id=org_head, investigators=investigators
-    # )
-
-    current_app.logger.info("Register (stub)  orgId=%s  orgName=%s", org_id, org_name)
-
-    return success_response(
-        data={
-            "orgId":         org_id,
-            "orgName":       org_name,
-            "orgHeadId":     org_head,
-            "investigators": investigators,
-        },
-        message="Organization registered successfully.",
-        status_code=201,
-    )
+    except EnvironmentError as e:
+        current_app.logger.error("Supabase config error: %s", e)
+        return error_response(str(e), 500, "Configuration Error")
+    except Exception as e:
+        current_app.logger.error("Login error: %s", e)
+        return error_response("Login failed. Please try again.", 500, "Internal Server Error")

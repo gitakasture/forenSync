@@ -62,6 +62,12 @@ def create_app(config_name: str = "default") -> Flask:
     app.config.from_object(cfg_class)
 
     # ------------------------------------------------------------------ #
+    # 3.5. Initialize Database
+    # ------------------------------------------------------------------ #
+    from models import init_db
+    init_db(app)
+
+    # ------------------------------------------------------------------ #
     # 4. Ensure the uploads directory exists
     #    We create it here so the rest of the app can assume it is present.
     # ------------------------------------------------------------------ #

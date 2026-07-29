@@ -46,6 +46,16 @@ class BaseConfig:
     TESTING: bool = False
 
     # ------------------------------------------------------------------
+    # Database
+    # ------------------------------------------------------------------
+    default_db_path = os.path.abspath(os.path.join(os.path.dirname(__file__), "forensync.db"))
+    raw_db_url = os.getenv("DATABASE_URL", f"sqlite:///{default_db_path}")
+    if raw_db_url.startswith("postgres://"):
+        raw_db_url = raw_db_url.replace("postgres://", "postgresql://", 1)
+    SQLALCHEMY_DATABASE_URI: str = raw_db_url
+    SQLALCHEMY_TRACK_MODIFICATIONS: bool = False
+
+    # ------------------------------------------------------------------
     # File uploads
     # ------------------------------------------------------------------
 
@@ -152,6 +162,7 @@ class TestingConfig(BaseConfig):
     TESTING: bool = True
     DEBUG: bool = False
     SECRET_KEY: str = "test-secret-key-not-for-production"
+    SQLALCHEMY_DATABASE_URI: str = "sqlite:///:memory:"
     UPLOAD_FOLDER: str = os.path.join(os.path.dirname(__file__), "tests", "uploads")
     LOG_LEVEL: int = logging.WARNING  # keep test output quiet
 
