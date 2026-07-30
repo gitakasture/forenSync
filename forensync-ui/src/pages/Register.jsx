@@ -1,5 +1,6 @@
 import { useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
+import api from "../utils/api";
 
 let nextId = 1;
 
@@ -10,6 +11,8 @@ export default function Register() {
   const [orgHeadId, setOrgHeadId] = useState("");
   const [investigators, setInvestigators] = useState([]);
   const [draft, setDraft] = useState({ name: "", id: "" });
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState("");
 
   const addInvestigator = () => {
     if (!draft.name.trim() || !draft.id.trim()) return;
@@ -21,10 +24,29 @@ export default function Register() {
     setInvestigators(investigators.filter((inv) => inv.key !== key));
   };
 
-  const handleSubmit = (e) => {
+  const handleSubmit = async (e) => {
     e.preventDefault();
-    // Mock registration — replace with real Axios call once the backend exists.
-    navigate("/login");
+    setError("");
+    setLoading(true);
+
+    try {
+      await api.post("/auth/register", {
+        orgName: orgName.trim(),
+        orgId: orgId.trim(),
+        orgHeadId: orgHeadId.trim(),
+        // Strip the internal `key` field — backend only needs name + id
+        investigators: investigators.map(({ name, id }) => ({ name, id })),
+      });
+
+      navigate("/login");
+    } catch (err) {
+      const msg =
+        err.response?.data?.message ||
+        (err.request ? "Cannot reach the server. Is the backend running?" : "An unexpected error occurred.");
+      setError(msg);
+    } finally {
+      setLoading(false);
+    }
   };
 
   return (
@@ -127,10 +149,15 @@ export default function Register() {
 
           <button
             type="submit"
-            className="mt-6 w-full rounded-sm bg-amber py-2.5 text-sm font-medium text-ink transition-colors hover:bg-amber-hover"
+            disabled={loading}
+            className="mt-6 w-full rounded-sm bg-amber py-2.5 text-sm font-medium text-ink transition-colors hover:bg-amber-hover disabled:opacity-60"
           >
-            Register
+            {loading ? "Registering…" : "Register"}
           </button>
+
+          {error && (
+            <p className="mt-3 text-center text-xs text-danger">{error}</p>
+          )}
 
           <p className="mt-5 text-center text-sm text-ash">
             Already registered?{" "}

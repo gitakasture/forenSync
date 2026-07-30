@@ -1,17 +1,39 @@
 import { useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import { setRole as persistRole } from "../utils/auth";
+import api from "../utils/api";
 
 export default function Login() {
   const navigate = useNavigate();
   const [role, setRole] = useState("investigator"); // "head" | "investigator"
   const [form, setForm] = useState({ orgId: "", userId: "" });
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState("");
 
-  const handleSubmit = (e) => {
+  const handleSubmit = async (e) => {
     e.preventDefault();
-    // Mock auth — replace with real Axios call to auth endpoint later.
-    persistRole(role);
-    navigate("/dashboard");
+    setError("");
+    setLoading(true);
+
+    try {
+      const { data } = await api.post("/auth/login", {
+        orgId: form.orgId.trim(),
+        userId: form.userId.trim(),
+        role,
+      });
+
+      // Backend returns: { status, data: { role, name, investigatorId, orgId, orgName } }
+      persistRole(data.data.role);
+      navigate("/dashboard");
+    } catch (err) {
+      // Show the backend's message when available, otherwise a generic fallback
+      const msg =
+        err.response?.data?.message ||
+        (err.request ? "Cannot reach the server. Is the backend running?" : "An unexpected error occurred.");
+      setError(msg);
+    } finally {
+      setLoading(false);
+    }
   };
 
   const idLabel = role === "head" ? "Organization Head ID" : "Investigator ID";
@@ -76,10 +98,15 @@ export default function Login() {
 
           <button
             type="submit"
-            className="w-full rounded-sm bg-amber py-2.5 text-sm font-medium text-ink transition-colors hover:bg-amber-hover"
+            disabled={loading}
+            className="w-full rounded-sm bg-amber py-2.5 text-sm font-medium text-ink transition-colors hover:bg-amber-hover disabled:opacity-60"
           >
-            Login
+            {loading ? "Signing in…" : "Login"}
           </button>
+
+          {error && (
+            <p className="mt-3 text-center text-xs text-danger">{error}</p>
+          )}
 
           <p className="mt-5 text-center text-sm text-ash">
             New organization?{" "}
