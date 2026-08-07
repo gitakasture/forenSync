@@ -30,13 +30,17 @@ export default function Register() {
     setLoading(true);
 
     try {
-      await api.post("/auth/register", {
+      const payload = {
         orgName: orgName.trim(),
         orgId: orgId.trim(),
         orgHeadId: orgHeadId.trim(),
-        // Strip the internal `key` field — backend only needs name + id
         investigators: investigators.map(({ name, id }) => ({ name, id })),
-      });
+      };
+
+      console.log("REGISTER PAYLOAD:");
+      console.log(payload);
+
+      await api.post("/auth/register", payload);
 
       navigate("/login");
     } catch (err) {

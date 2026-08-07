@@ -23,8 +23,18 @@ export default function Login() {
       });
 
       // Backend returns: { status, data: { role, name, investigatorId, orgId, orgName } }
-      persistRole(data.data.role);
-      navigate("/dashboard");
+      // persistRole(data.data.role);
+      // navigate("/dashboard");
+
+      const userRole = data.data.role;
+
+      persistRole(userRole);
+      if (userRole === "head") {
+        navigate("/head-dashboard");
+      } else {
+        navigate("/investigator-dashboard");
+      }
+
     } catch (err) {
       // Show the backend's message when available, otherwise a generic fallback
       const msg =

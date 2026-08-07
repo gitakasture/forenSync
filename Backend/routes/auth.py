@@ -18,7 +18,7 @@ Frontend contract (must not change):
 from flask import Blueprint, request, current_app
 
 from utils.response import success_response, error_response
-from utils.validators import require_json_fields, validate_id_format
+from utils.validators import require_json_fields
 from services.auth_service import (
     register_organization,
     login_user,
@@ -49,6 +49,8 @@ def register():
         { "status": "success", "data": { orgId, orgName, orgHeadId, investigators } }
     """
     body = request.get_json(silent=True) or {}
+    print("REGISTER REQUEST:")
+    print(body)
     current_app.logger.debug("Register attempt  orgId=%s", body.get("orgId"))
 
     valid, errors = require_json_fields(request, ["orgName", "orgId", "orgHeadId"])
@@ -60,19 +62,19 @@ def register():
     head_id       = body["orgHeadId"].strip()
     investigators = body.get("investigators", [])
 
-    org_valid, org_err = validate_id_format(org_id, "ORG")
-    if not org_valid:
-        return error_response(
-            f"Invalid orgId: {org_err}", 400, "Bad Request",
-            [{"field": "orgId", "message": org_err}],
-        )
+    # org_valid, org_err = validate_id_format(org_id, "ORG")
+    # if not org_valid:
+    #     return error_response(
+    #         f"Invalid orgId: {org_err}", 400, "Bad Request",
+    #         [{"field": "orgId", "message": org_err}],
+    #     )
 
-    head_valid, head_err = validate_id_format(head_id, "HEAD")
-    if not head_valid:
-        return error_response(
-            f"Invalid orgHeadId: {head_err}", 400, "Bad Request",
-            [{"field": "orgHeadId", "message": head_err}],
-        )
+    # head_valid, head_err = validate_id_format(head_id, "HEAD")
+    # if not head_valid:
+    #     return error_response(
+    #         f"Invalid orgHeadId: {head_err}", 400, "Bad Request",
+    #         [{"field": "orgHeadId", "message": head_err}],
+    #     )
 
     try:
         result = register_organization(org_id, org_name, head_id, investigators)
@@ -87,9 +89,16 @@ def register():
     except (EnvironmentError, ServiceError) as e:
         current_app.logger.error("Register service error: %s", e)
         return error_response("Registration failed. Please try again.", 500, "Internal Server Error")
+    # except Exception as e:
+    #     current_app.logger.error("Register unexpected error: %s", e)
+    #     return error_response("An unexpected error occurred.", 500, "Internal Server Error")
     except Exception as e:
-        current_app.logger.error("Register unexpected error: %s", e)
-        return error_response("An unexpected error occurred.", 500, "Internal Server Error")
+        current_app.logger.exception(e)
+        return error_response(
+            str(e),
+            500,
+            "Internal Server Error"
+        )
 
 
 # POST /api/v1/auth/login

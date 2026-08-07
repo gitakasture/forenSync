@@ -59,6 +59,125 @@ def _get_client() -> Client:
 
 #  Register 
 
+# def register_organization(
+#     org_id: str,
+#     org_name: str,
+#     head_id: str,
+#     investigators: list[dict],
+# ) -> dict:
+#     """
+#     Register a new organization and its users in Supabase.
+
+#     Database write order:
+#         1. INSERT organizations (org_id, name)           -- no head_id column
+#         2. INSERT users: head user  (user_id=head_id, role='head')
+#         3. INSERT users: investigators (role='investigator')
+
+#     Args:
+#         org_id:        e.g. "ORG-4410"
+#         org_name:      e.g. "Sentinel Cyber Forensics"
+#         head_id:       e.g. "HEAD-0001"  (becomes a users row, NOT an org column)
+#         investigators: list of { "name": str, "id": str }
+
+#     Returns:
+#         dict: { orgId, orgName, orgHeadId, investigators }
+
+#     Raises:
+#         ConflictError:  duplicate org_id or head user_id
+#         ServiceError:   Supabase API error or unexpected failure
+#     """
+#     sb = _get_client()
+
+
+#     logger.info("[REGISTER] Checking org uniqueness  org_id=%s", org_id)
+#     try:
+#         existing = (
+#             sb.table("organizations")
+#             .select("id")
+#             .eq("org_id", org_id)
+#             .execute()
+#         )
+#     except APIError as e:
+#         logger.error("[REGISTER] Supabase error on uniqueness check: %s", e)
+#         raise ServiceError(f"Database error during uniqueness check: {e.message}")
+
+#     if existing.data:
+#         logger.warning("[REGISTER] Conflict: org_id already exists  org_id=%s", org_id)
+#         raise ConflictError(f"Organization ID '{org_id}' is already registered.")
+
+    
+#     logger.info("[REGISTER] Inserting organization  org_id=%s  name=%s", org_id, org_name)
+#     try:
+#         org_result = (
+#             sb.table("organizations")
+#             .insert({"org_id": org_id, "name": org_name})
+#             .execute()
+#         )
+#     except APIError as e:
+#         logger.error("[REGISTER] Failed to insert organization: code=%s msg=%s", e.code, e.message)
+#         raise ServiceError(f"Failed to create organization: {e.message}")
+
+#     if not org_result.data:
+#         logger.error("[REGISTER] Organization insert returned no data")
+#         raise ServiceError("Organization insert returned no data.")
+
+#     org_uuid = org_result.data[0]["id"]
+#     logger.info("[REGISTER] Organization created  org_id=%s  uuid=%s", org_id, org_uuid)
+
+    
+#     users_to_insert = [
+#         {
+#             "user_id": head_id,
+#             "name":    "Organization Head",
+#             "role":    "head",
+#             "org_id":  org_uuid,
+#         }
+#     ]
+
+#     clean_investigators = []
+#     for inv in investigators:
+#         inv_id   = (inv.get("id")   or "").strip()
+#         inv_name = (inv.get("name") or "").strip()
+#         if inv_id and inv_name:
+#             users_to_insert.append({
+#                 "user_id": inv_id,
+#                 "name":    inv_name,
+#                 "role":    "investigator",
+#                 "org_id":  org_uuid,
+#             })
+#             clean_investigators.append({"id": inv_id, "name": inv_name})
+
+#     logger.info(
+#         "[REGISTER] Inserting %d user(s)  org_id=%s  head=%s  investigators=%d",
+#         len(users_to_insert), org_id, head_id, len(clean_investigators),
+#     )
+
+#     #  4. Batch insert users 
+#     try:
+#         users_result = sb.table("users").insert(users_to_insert).execute()
+#     except APIError as e:
+#         logger.error("[REGISTER] Failed to insert users: code=%s msg=%s", e.code, e.message)
+#         # Attempt rollback: delete the org we just created so the DB stays clean
+#         try:
+#             sb.table("organizations").delete().eq("id", org_uuid).execute()
+#             logger.info("[REGISTER] Rollback: deleted orphaned org  uuid=%s", org_uuid)
+#         except Exception as rb_err:
+#             logger.error("[REGISTER] Rollback failed: %s", rb_err)
+#         raise ServiceError(f"Failed to create users: {e.message}")
+
+#     logger.info(
+#         "[REGISTER] Success  org_id=%s  users_inserted=%d",
+#         org_id, len(users_result.data or []),
+#     )
+
+#     return {
+#         "orgId":         org_id,
+#         "orgName":       org_name,
+#         "orgHeadId":     head_id,
+#         "investigators": clean_investigators,
+#     }
+
+
 def register_organization(
     org_id: str,
     org_name: str,
@@ -66,118 +185,122 @@ def register_organization(
     investigators: list[dict],
 ) -> dict:
     """
-    Register a new organization and its users in Supabase.
+    Registration flow:
 
-    Database write order:
-        1. INSERT organizations (org_id, name)           -- no head_id column
-        2. INSERT users: head user  (user_id=head_id, role='head')
-        3. INSERT users: investigators (role='investigator')
-
-    Args:
-        org_id:        e.g. "ORG-4410"
-        org_name:      e.g. "Sentinel Cyber Forensics"
-        head_id:       e.g. "HEAD-0001"  (becomes a users row, NOT an org column)
-        investigators: list of { "name": str, "id": str }
-
-    Returns:
-        dict: { orgId, orgName, orgHeadId, investigators }
-
-    Raises:
-        ConflictError:  duplicate org_id or head user_id
-        ServiceError:   Supabase API error or unexpected failure
+    1. Verify organization exists.
+    2. Verify organization name matches.
+    3. Verify head exists and belongs to that organization.
+    4. Create investigator accounts.
     """
+
     sb = _get_client()
 
-    #  1. Duplicate check 
-    logger.info("[REGISTER] Checking org uniqueness  org_id=%s", org_id)
+    # --------------------------------------------------
+    # STEP 1: Verify organization exists
+    # --------------------------------------------------
+
     try:
-        existing = (
+        org_result = (
             sb.table("organizations")
-            .select("id")
+            .select("id, org_id, name")
             .eq("org_id", org_id)
             .execute()
         )
     except APIError as e:
-        logger.error("[REGISTER] Supabase error on uniqueness check: %s", e)
-        raise ServiceError(f"Database error during uniqueness check: {e.message}")
+        raise ServiceError(f"Database error during organization lookup: {e.message}")
 
-    if existing.data:
-        logger.warning("[REGISTER] Conflict: org_id already exists  org_id=%s", org_id)
-        raise ConflictError(f"Organization ID '{org_id}' is already registered.")
+    if not org_result.data:
+        raise ConflictError("Invalid Organization ID.")
 
-    #  2. Insert organization (only columns that exist in the live DB) 
-    #    Live DB columns: id, org_id, name, is_active, created_at
-    #    head_id is NOT a column -- do not include it.
-    logger.info("[REGISTER] Inserting organization  org_id=%s  name=%s", org_id, org_name)
+    org = org_result.data[0]
+    org_uuid = org["id"]
+
+    # --------------------------------------------------
+    # STEP 2: Verify organization name matches
+    # --------------------------------------------------
+
+    db_org_name = (org.get("name") or "").strip()
+
+    if db_org_name.lower() != org_name.strip().lower():
+        raise ConflictError(
+            "Organization Name does not match the Organization ID."
+        )
+
+    # --------------------------------------------------
+    # STEP 3: Verify head exists
+    # --------------------------------------------------
+
     try:
-        org_result = (
-            sb.table("organizations")
-            .insert({"org_id": org_id, "name": org_name})
+        head_result = (
+            sb.table("users")
+            .select("id, user_id, role, org_id")
+            .eq("user_id", head_id)
+            .eq("role", "head")
+            .eq("org_id", org_uuid)
             .execute()
         )
     except APIError as e:
-        logger.error("[REGISTER] Failed to insert organization: code=%s msg=%s", e.code, e.message)
-        raise ServiceError(f"Failed to create organization: {e.message}")
+        raise ServiceError(f"Database error during head lookup: {e.message}")
 
-    if not org_result.data:
-        logger.error("[REGISTER] Organization insert returned no data")
-        raise ServiceError("Organization insert returned no data.")
+    if not head_result.data:
+        raise ConflictError(
+            "Invalid Head ID for this organization."
+        )
 
-    org_uuid = org_result.data[0]["id"]
-    logger.info("[REGISTER] Organization created  org_id=%s  uuid=%s", org_id, org_uuid)
+    # --------------------------------------------------
+    # STEP 4: Build investigator records
+    # --------------------------------------------------
 
-    #  3. Build users batch: head first, then investigators 
-    users_to_insert = [
-        {
-            "user_id": head_id,
-            "name":    "Organization Head",
-            "role":    "head",
-            "org_id":  org_uuid,
-        }
-    ]
-
+    users_to_insert = []
     clean_investigators = []
+
     for inv in investigators:
-        inv_id   = (inv.get("id")   or "").strip()
+        inv_id = (inv.get("id") or "").strip()
         inv_name = (inv.get("name") or "").strip()
-        if inv_id and inv_name:
-            users_to_insert.append({
-                "user_id": inv_id,
-                "name":    inv_name,
-                "role":    "investigator",
-                "org_id":  org_uuid,
-            })
-            clean_investigators.append({"id": inv_id, "name": inv_name})
 
-    logger.info(
-        "[REGISTER] Inserting %d user(s)  org_id=%s  head=%s  investigators=%d",
-        len(users_to_insert), org_id, head_id, len(clean_investigators),
-    )
+        if not inv_id or not inv_name:
+            continue
 
-    #  4. Batch insert users 
-    try:
-        users_result = sb.table("users").insert(users_to_insert).execute()
-    except APIError as e:
-        logger.error("[REGISTER] Failed to insert users: code=%s msg=%s", e.code, e.message)
-        # Attempt rollback: delete the org we just created so the DB stays clean
+        users_to_insert.append({
+            "user_id": inv_id,
+            "name": inv_name,
+            "role": "investigator",
+            "status": "Active",
+            "org_id": org_uuid,
+        })
+
+        clean_investigators.append({
+            "id": inv_id,
+            "name": inv_name,
+        })
+
+    # --------------------------------------------------
+    # STEP 5: Insert investigators
+    # --------------------------------------------------
+    
+    print("USERS TO INSERT:")
+    print(users_to_insert)
+
+    if users_to_insert:
         try:
-            sb.table("organizations").delete().eq("id", org_uuid).execute()
-            logger.info("[REGISTER] Rollback: deleted orphaned org  uuid=%s", org_uuid)
-        except Exception as rb_err:
-            logger.error("[REGISTER] Rollback failed: %s", rb_err)
-        raise ServiceError(f"Failed to create users: {e.message}")
+            sb.table("users").insert(users_to_insert).execute()
+        except APIError as e:
+            print("INVESTIGATOR INSERT ERROR:", e)
+            raise
 
     logger.info(
-        "[REGISTER] Success  org_id=%s  users_inserted=%d",
-        org_id, len(users_result.data or []),
+        "[REGISTER] Success org_id=%s investigators=%d",
+        org_id,
+        len(clean_investigators),
     )
 
     return {
-        "orgId":         org_id,
-        "orgName":       org_name,
-        "orgHeadId":     head_id,
+        "orgId": org_id,
+        "orgName": org_name,
+        "orgHeadId": head_id,
         "investigators": clean_investigators,
     }
+
 
 
 #  Login 
