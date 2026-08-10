@@ -251,6 +251,9 @@ def register_organization(
     # STEP 4: Build investigator records
     # --------------------------------------------------
 
+    print("INVESTIGATORS RECEIVED:")
+    print(investigators)
+
     users_to_insert = []
     clean_investigators = []
 
