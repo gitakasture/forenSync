@@ -1,24 +1,24 @@
 #run this to test auth logs parser
-# from plugins.auth_log import AuthLogParser
-# from collections import Counter
+from plugins.auth_log import AuthLogParser
+from collections import Counter
 
-# parser = AuthLogParser(starting_year=2005)
-# events = parser.parse("sample_logs/auth_log_sample.log")
+parser = AuthLogParser(starting_year=2005)
+events = parser.parse("sample_logs/auth_log_sample.log")
 
-# print(f"Parsed {len(events)} events total\n")
+print(f"Parsed {len(events)} events total\n")
 
-# print("First 10 events:")
-# for e in events[:10]:
-#     print(e)
+print("First 10 events:")
+for e in events[:10]:
+    print(e)
 
-# print("\nLast 5 events:")
-# for e in events[-5:]:
-#     print(e)
+print("\nLast 5 events:")
+for e in events[-5:]:
+    print(e)
 
-# action_counts = Counter(e['action'] for e in events)
-# print("\nEvent breakdown by action type:")
-# for action, count in action_counts.items():
-#     print(f"  {action}: {count}")
+action_counts = Counter(e['action'] for e in events)
+print("\nEvent breakdown by action type:")
+for action, count in action_counts.items():
+    print(f"  {action}: {count}")
 
 
 
@@ -141,10 +141,10 @@
 
 
 #run this to get list of available plugins
-from plugins.registry import get_plugin, list_available_plugins
+# from plugins.registry import get_plugin, list_available_plugins
 
-print("Available plugins:", list_available_plugins())
+# print("Available plugins:", list_available_plugins())
 
-parser = get_plugin("nginx_access")
-events = parser.parse("sample_logs/nginx_access_sample.log")
-print(f"Parsed {len(events)} events via registry")
+# parser = get_plugin("nginx_access")
+# events = parser.parse("sample_logs/nginx_access_sample.log")
+# print(f"Parsed {len(events)} events via registry")
