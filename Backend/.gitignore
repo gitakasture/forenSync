@@ -20,8 +20,8 @@ uploads/*
 !uploads/.gitkeep
 
 # ── Logs ─────────────────────────────────────
-*.log
-logs/
+# *.log
+# logs/
 
 # ── Distribution / packaging ─────────────────
 dist/
