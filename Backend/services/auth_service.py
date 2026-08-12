@@ -47,6 +47,10 @@ def _get_client() -> Client:
     url = os.environ.get("SUPABASE_URL", "").strip()
     key = os.environ.get("SUPABASE_SERVICE_KEY", "").strip()
 
+    # print("URL loaded:", bool(url))
+    # print("KEY loaded:", bool(key))
+    # print("KEY prefix:", key[:20] if key else "EMPTY")
+
     if not url or not key:
         raise EnvironmentError(
             "SUPABASE_URL and SUPABASE_SERVICE_KEY must be set in .env. "
