@@ -157,6 +157,7 @@ class TestingConfig(BaseConfig):
     - DEBUG off   → tests run against production-like error behaviour
     - In-memory / temp upload folder keeps tests isolated
     - Dedicated SECRET_KEY so test tokens never collide with dev tokens
+    - Larger MAX_CONTENT_LENGTH for testing with sample log files
     """
 
     TESTING: bool = True
@@ -164,6 +165,7 @@ class TestingConfig(BaseConfig):
     SECRET_KEY: str = "test-secret-key-not-for-production"
     SQLALCHEMY_DATABASE_URI: str = "sqlite:///:memory:"
     UPLOAD_FOLDER: str = os.path.join(os.path.dirname(__file__), "tests", "uploads")
+    MAX_CONTENT_LENGTH: int = 100 * 1024 * 1024  # 100 MB for testing
     LOG_LEVEL: int = logging.WARNING  # keep test output quiet
 
 

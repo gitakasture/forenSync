@@ -62,12 +62,12 @@ def create_app(config_name: str = "default") -> Flask:
     app.config.from_object(cfg_class)
 
     # ------------------------------------------------------------------ #
-    # 3.5. Database
-    # NOTE: SQLAlchemy/SQLite init_db() is intentionally NOT called here.
-    # Authentication uses Supabase (services/auth_service.py) directly.
-    # TODO (cases/plugins/timeline phase): when those features move to
-    # Supabase, add a db initialisation step here if needed.
+    # 3.5. Database Initialization
+    #    Initialize SQLAlchemy and create tables if they don't exist.
+    #    This runs on every app start, so the database is always ready.
     # ------------------------------------------------------------------ #
+    from models import init_db
+    init_db(app)
 
     # ------------------------------------------------------------------ #
     # 4. Ensure the uploads directory exists

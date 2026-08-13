@@ -1,9 +1,9 @@
 """
-routes/upload.py — File upload Blueprint with Database Integration.
+routes/upload.py — File upload Blueprint with Parser Integration.
 
 POST /api/v1/upload
     Accepts multipart/form-data log file upload, saves file to storage,
-    and records LogFile job entry in Database.
+    records LogFile job entry in Database, and triggers parsing.
 """
 
 import os
@@ -13,6 +13,12 @@ from flask import Blueprint, request, current_app
 from models import db, LogFile, Case
 from utils.response import success_response, error_response
 from utils.validators import allowed_file, safe_filename_check
+from services.parser_service import (
+    process_upload,
+    UnsupportedFileError,
+    ParserExecutionError,
+    DatabasePersistenceError,
+)
 
 upload_bp = Blueprint("upload", __name__)
 
@@ -84,14 +90,47 @@ def upload_file():
         job_id,
     )
 
-    return success_response(
-        data={
-            "filename":    uploaded.filename,
-            "size":        file_size,
-            "caseId":      case_id,
-            "jobId":       job_id,
-            "parseStatus": "queued",
-        },
-        message="File received and queued for processing.",
-        status_code=200,
-    )
+    # ──────────────────────────────────────────────────────────────────────
+    # Parser Integration: Trigger parsing synchronously
+    # ──────────────────────────────────────────────────────────────────────
+    try:
+        event_count = process_upload(
+            filepath=save_path,
+            job_id=job_id,
+            case_id=case_id,
+            log_file_id=log_file.id,
+        )
+
+        return success_response(
+            data={
+                "filename":    uploaded.filename,
+                "size":        file_size,
+                "caseId":      case_id,
+                "jobId":       job_id,
+                "parseStatus": "parsed",
+                "eventCount":  event_count,
+            },
+            message="File parsed successfully.",
+            status_code=200,
+        )
+
+    except UnsupportedFileError as e:
+        return error_response(
+            message=str(e),
+            status_code=422,
+            error="Unsupported File",
+        )
+
+    except ParserExecutionError as e:
+        return error_response(
+            message=str(e),
+            status_code=500,
+            error="Parser Error",
+        )
+
+    except DatabasePersistenceError as e:
+        return error_response(
+            message=str(e),
+            status_code=500,
+            error="Database Error",
+        )
