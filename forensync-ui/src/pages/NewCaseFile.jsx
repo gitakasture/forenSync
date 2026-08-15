@@ -1,6 +1,7 @@
 import { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import Sidebar from "../components/Sidebar";
+import api from "../utils/api";
 
 export default function NewCaseFile() {
   const navigate = useNavigate();
@@ -11,6 +12,9 @@ export default function NewCaseFile() {
     to: "",
   });
   const [files, setFiles] = useState([]);
+  const [uploading, setUploading] = useState(false);
+  const [uploadError, setUploadError] = useState("");
+  const [uploadSuccess, setUploadSuccess] = useState(false);
 
   const handleDrop = (e) => {
     e.preventDefault();
@@ -21,10 +25,56 @@ export default function NewCaseFile() {
     setFiles([...files, ...Array.from(e.target.files)]);
   };
 
-  const handleSubmit = (e) => {
+  const handleSubmit = async (e) => {
     e.preventDefault();
-    // Mock upload — replace with real Axios call to case-ingestion endpoint.
-    navigate("/dashboard");
+    
+    if (files.length === 0) {
+      setUploadError("Please select at least one log file to upload.");
+      return;
+    }
+    
+    setUploading(true);
+    setUploadError("");
+    setUploadSuccess(false);
+    
+    try {
+      // Upload each file individually
+      const uploadResults = [];
+      
+      for (const file of files) {
+        const formData = new FormData();
+        formData.append('file', file);
+        formData.append('caseId', 'CASE-1042'); // Default case ID
+        
+        const response = await api.post('/upload', formData, {
+          headers: {
+            'Content-Type': 'multipart/form-data',
+          },
+        });
+        
+        uploadResults.push({
+          filename: file.name,
+          success: true,
+          data: response.data.data,
+        });
+      }
+      
+      setUploadSuccess(true);
+      
+      // Navigate to dashboard after successful upload
+      setTimeout(() => {
+        navigate("/dashboard");
+      }, 1500);
+      
+    } catch (error) {
+      console.error('Upload error:', error);
+      setUploadError(
+        error.response?.data?.message || 
+        'Failed to upload files. Please try again.'
+      );
+    } finally {
+      setUploading(false);
+    }
   };
 
   return (
@@ -117,11 +167,24 @@ export default function NewCaseFile() {
               </div>
             </div>
 
+            {uploadError && (
+              <div className="mb-5 rounded-sm border border-danger/40 bg-danger/10 px-4 py-3 text-sm text-danger">
+                {uploadError}
+              </div>
+            )}
+
+            {uploadSuccess && (
+              <div className="mb-5 rounded-sm border border-teal/40 bg-teal/10 px-4 py-3 text-sm text-teal">
+                ✓ Files uploaded and parsed successfully! Redirecting...
+              </div>
+            )}
+
             <button
               type="submit"
-              className="w-full rounded-sm bg-amber py-2.5 text-sm font-medium text-ink transition-colors hover:bg-amber-hover"
+              disabled={uploading || files.length === 0}
+              className="w-full rounded-sm bg-amber py-2.5 text-sm font-medium text-ink transition-colors hover:bg-amber-hover disabled:opacity-60 disabled:cursor-not-allowed"
             >
-              Upload
+              {uploading ? 'Uploading and parsing...' : 'Upload'}
             </button>
           </form>
         </div>
