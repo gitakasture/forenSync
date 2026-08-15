@@ -15,8 +15,6 @@ const statusStyles = {
 
 const quickActions = [
   { icon: "📋", label: "Create New\nCase" },
-  { icon: "📤", label: "Upload\nEvidence" },
-  { icon: "🧩", label: "Manage\nParsers" },
   { icon: "👥", label: "Manage\nUsers" },
 ];
 
@@ -128,7 +126,7 @@ export default function Dashboard() {
               {/* Quick Actions */}
               <div>
                 <h2 className="mb-3 font-display text-base font-medium text-paper">Quick Actions</h2>
-                <div className="grid grid-cols-4 gap-3">
+                <div className="grid grid-cols-2 gap-3">
                   {quickActions.map((qa, i) => (
                     <button
                       key={i}
@@ -146,7 +144,6 @@ export default function Dashboard() {
               <div>
                 <div className="mb-3 flex items-center justify-between">
                   <h2 className="font-display text-base font-medium text-paper">Recent Activity</h2>
-                  <button className="text-xs text-amber hover:text-amber-hover">View all</button>
                 </div>
                 <div className="space-y-3">
                   {recentActivity.map((a, i) => (

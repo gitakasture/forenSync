@@ -1,16 +1,24 @@
 import { NavLink, useNavigate } from "react-router-dom";
-import { mockInvestigator } from "../data/mockData";
-import { isOrgHead, logout } from "../utils/auth";
+// import { mockInvestigator } from "../data/mockData";
+import { getUser, isOrgHead, logout } from "../utils/auth";
+// import { isOrgHead, logout } from "../utils/auth";
 
 const baseNavItems = [
-  { label: "Dashboard", to: "/dashboard", icon: "⊞" },
+  // { label: "Dashboard", to: "/dashboard", icon: "⊞" },
   { label: "Cases", to: "/cases", icon: "☰" },
+  // { label: "Users & Teams", to: "/users", icon: "👥" },
+];
+
+const investigatorOnlyNavItems = [
   { label: "Parser Plugins", to: "/plugins", icon: "🧩" },
-  { label: "Users & Teams", to: "/users", icon: "👥" },
 ];
 
 const headOnlyNavItems = [
   { label: "System Settings", to: "/settings", icon: "⚙" },
+];
+
+const sharedNavItems = [
+  { label: "Users & Teams", to: "/users", icon: "👥" },
 ];
 
 const trailingNavItems = [
@@ -20,7 +28,22 @@ const trailingNavItems = [
 export default function Sidebar() {
   const navigate = useNavigate();
   const head = isOrgHead();
-  const navItems = [...baseNavItems, ...(head ? headOnlyNavItems : []), ...trailingNavItems];
+  const user = getUser();
+
+  const dashboardItem = {
+    label: "Dashboard",
+    to: head ? "/head-dashboard" : "/investigator-dashboard",
+    icon: "⊞",
+  };
+
+  const navItems = [
+    dashboardItem,
+    ...baseNavItems,
+    ...(head ? [] : investigatorOnlyNavItems),
+    ...sharedNavItems,
+    ...(head ? headOnlyNavItems : []),
+    ...trailingNavItems,
+  ];
 
   const handleLogout = () => {
     logout();
@@ -45,7 +68,7 @@ export default function Sidebar() {
             <li key={item.to}>
               <NavLink
                 to={item.to}
-                end={item.to === "/dashboard"}
+                end={item.to === "/head-dashboard" || item.to === "/investigator-dashboard"}
                 className={({ isActive }) =>
                   `flex items-center gap-3 rounded-sm px-3 py-2 text-sm transition-colors ${
                     isActive
@@ -65,12 +88,12 @@ export default function Sidebar() {
       <div className="border-t border-hairline px-4 py-4">
         <div className="flex items-center gap-3">
           <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full border border-amber bg-amber/10 font-mono text-xs font-medium text-amber">
-            {mockInvestigator.name.split(" ").map((n) => n[0]).join("")}
+            {user?.name?.split(" ").map((n) => n[0]).join("") || "?"}
           </div>
           <div className="min-w-0 flex-1">
-            <p className="truncate text-sm text-paper">{mockInvestigator.name}</p>
+            <p className="truncate text-sm text-paper">{user?.name || "Unknown User"}</p>
             <p className="truncate font-mono text-[11px] text-ash">
-              {head ? "Head of Team" : mockInvestigator.investigatorId}
+              {head ? "Head of Team" : user?.investigatorId}
             </p>
           </div>
           <button

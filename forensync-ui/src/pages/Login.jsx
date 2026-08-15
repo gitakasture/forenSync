@@ -1,6 +1,7 @@
 import { useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
-import { setRole as persistRole } from "../utils/auth";
+// import { setRole as persistRole } from "../utils/auth";
+import { setUser } from "../utils/auth";
 import api from "../utils/api";
 
 export default function Login() {
@@ -26,14 +27,24 @@ export default function Login() {
       // persistRole(data.data.role);
       // navigate("/dashboard");
 
-      const userRole = data.data.role;
+      // const userRole = data.data.role;
 
-      persistRole(userRole);
-      if (userRole === "head") {
+      // persistRole(userRole);
+      // if (userRole === "head") {
+      //   navigate("/head-dashboard");
+      // } else {
+      //   navigate("/investigator-dashboard");
+      // }
+
+      
+      setUser(data.data); // stores { role, name, investigatorId, orgId, orgName }
+
+      if (data.data.role === "head") {
         navigate("/head-dashboard");
       } else {
         navigate("/investigator-dashboard");
       }
+
 
     } catch (err) {
       // Show the backend's message when available, otherwise a generic fallback

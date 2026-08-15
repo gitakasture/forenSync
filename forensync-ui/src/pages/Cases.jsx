@@ -1,10 +1,12 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import Sidebar from "../components/Sidebar";
 import TopBar from "../components/TopBar";
 import PluginDrawer from "../components/PluginDrawer";
 import { PluginDrawerProvider } from "../components/PluginDrawerContext";
 import NewCaseModal from "../components/NewCaseModal";
-import { mockCases } from "../data/mockData";
+import api from "../utils/api";
+import { getUser } from "../utils/auth";
+import CaseDetailModal from "../components/CaseDetailModal";
 
 const statusStyles = {
   Active: "text-teal border-teal/40 bg-teal/10",
@@ -13,10 +15,38 @@ const statusStyles = {
 };
 
 export default function Cases() {
+  
   const [showNewCase, setShowNewCase] = useState(false);
   const [filter, setFilter] = useState("All");
 
-  const filtered = filter === "All" ? mockCases : mockCases.filter((c) => c.status === filter);
+  const [cases, setCases] = useState([]);
+  const [loading, setLoading] = useState(true);
+  const user = getUser();
+
+  const [selectedCaseId, setSelectedCaseId] = useState(null);
+
+    useEffect(() => {
+    if (!user?.orgId || !user?.investigatorId) return;
+
+    api
+      .get("/cases", {
+        params: {
+          orgId: user.orgId,
+          userId: user.investigatorId,
+          role: user.role,
+        },
+      })
+      .then(({ data }) => {
+        setCases(data.data.cases || []);
+      })
+      .catch(console.error)
+      .finally(() => setLoading(false));
+  }, []);
+
+  const filtered =
+    filter === "All"
+      ? cases
+      : cases.filter((c) => c.status === filter);
 
   return (
     <PluginDrawerProvider>
@@ -71,12 +101,12 @@ export default function Cases() {
                       </td>
                       <td className="px-5 py-3.5">
                         <div className="flex items-center gap-1">
-                          {c.investigators.slice(0, 2).map((inv) => (
+                          {(c.investigators || []).slice(0, 2).map((inv) => (
                             <span key={inv} className="flex h-7 w-7 items-center justify-center rounded-full border border-hairline bg-raised font-mono text-xs text-paper">
                               {inv}
                             </span>
                           ))}
-                          {c.extraInvestigators > 0 && (
+                          {(c.extraInvestigators || 0) > 0 && (
                             <span className="flex h-7 w-7 items-center justify-center rounded-full border border-hairline bg-raised font-mono text-xs text-ash">
                               +{c.extraInvestigators}
                             </span>
@@ -91,7 +121,7 @@ export default function Cases() {
                       </td>
                       <td className="px-5 py-3.5">
                         <div className="flex items-center gap-2">
-                          <button className="rounded-sm border border-hairline p-1.5 text-ash hover:border-amber hover:text-amber transition-colors">👁</button>
+                          <button onClick={() => setSelectedCaseId(c.caseId)} className="rounded-sm border border-hairline p-1.5 text-ash hover:border-amber hover:text-amber transition-colors">👁</button>
                           <button className="rounded-sm border border-hairline px-2 py-1 text-xs text-ash hover:border-amber hover:text-amber transition-colors">···</button>
                         </div>
                       </td>
@@ -104,6 +134,9 @@ export default function Cases() {
         </div>
         <PluginDrawer />
         {showNewCase && <NewCaseModal onClose={() => setShowNewCase(false)} />}
+        {selectedCaseId && (
+          <CaseDetailModal caseId={selectedCaseId} onClose={() => setSelectedCaseId(null)} />
+        )}
       </div>
     </PluginDrawerProvider>
   );
