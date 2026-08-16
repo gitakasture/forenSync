@@ -117,6 +117,18 @@ class BaseConfig:
     APP_VERSION: str = "0.1.0"
 
     # ------------------------------------------------------------------
+    # Timeline correlation configuration
+    # ------------------------------------------------------------------
+
+    # TIMELINE_SESSION_WINDOW_MINUTES defines the maximum time gap
+    # between events that can be correlated into the same session.
+    # Events with the same actor and host within this rolling window
+    # will be grouped together.
+    TIMELINE_SESSION_WINDOW_MINUTES: int = int(
+        os.getenv("TIMELINE_SESSION_WINDOW_MINUTES", "30")
+    )
+
+    # ------------------------------------------------------------------
     # Factory helper
     # ------------------------------------------------------------------
 

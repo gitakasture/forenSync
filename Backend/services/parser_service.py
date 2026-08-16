@@ -258,10 +258,14 @@ def _map_event(event: dict, case_id: str, log_file_id: int) -> TimelineEvent:
     Field mapping:
         event["timestamp"]  → timestamp (DateTime) + timestamp_str (str)
         event["source"]     → source
-        event["action"]     → event_type
+        event["host"]       → host
+        event["actor"]      → actor
+        event["action"]     → action + event_type
+        event["object"]     → object
+        event["result"]     → result
         result + action     → severity (via _map_severity)
         actor + action + object → description
-        event["raw_log"]    → raw_log
+        event["raw_log"]    → raw_log + raw_log_hash
 
     Args:
         event:       Normalized event dict from parser
@@ -271,30 +275,41 @@ def _map_event(event: dict, case_id: str, log_file_id: int) -> TimelineEvent:
     Returns:
         TimelineEvent instance (not yet committed)
     """
+    import hashlib
+    
     timestamp_str = event.get("timestamp", "unknown")
     timestamp_dt = _parse_timestamp(timestamp_str)
 
-    severity = _map_severity(
-        event.get("result", "unknown"),
-        event.get("action", "unknown"),
-    )
+    action = event.get("action", "unknown")
+    result = event.get("result", "unknown")
+    
+    severity = _map_severity(result, action)
 
-    description = _build_description(
-        event.get("actor", "unknown"),
-        event.get("action", "unknown"),
-        event.get("object", "unknown"),
-    )
+    actor = event.get("actor", "unknown")
+    object_ = event.get("object", "unknown")
+    
+    description = _build_description(actor, action, object_)
+    
+    raw_log = event.get("raw_log", "")
+    raw_log_hash = hashlib.sha256(raw_log.encode('utf-8')).hexdigest() if raw_log else None
 
     return TimelineEvent(
         case_id=case_id,
         log_file_id=log_file_id,
         timestamp=timestamp_dt,
-        timestamp_str=timestamp_str,
+        timestamp_str=timestamp_str if timestamp_str != "unknown" else None,
         source=event.get("source", "unknown"),
-        event_type=event.get("action", "unknown"),
+        host=event.get("host", None),
+        actor=actor if actor != "unknown" else None,
+        action=action if action != "unknown" else None,
+        object=object_ if object_ != "unknown" else None,
+        result=result if result != "unknown" else None,
+        event_type=action,
         severity=severity,
         description=description,
-        raw_log=event.get("raw_log", ""),
+        raw_log=raw_log,
+        raw_log_hash=raw_log_hash,
+        session_id=None,  # Will be populated by timeline generation
     )
 
 

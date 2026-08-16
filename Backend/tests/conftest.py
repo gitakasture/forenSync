@@ -4,12 +4,15 @@ conftest.py — Pytest configuration and fixtures for ForenSync backend tests.
 Provides:
     - app fixture: Flask application in testing mode with in-memory database
     - client fixture: Test client for making HTTP requests
+    - test_case fixture: Pre-created test case for timeline tests
+    - app_context fixture: Push app context for database operations
 """
 
 import os
 import pytest
+from datetime import datetime
 from app import create_app
-from models import db, Organization, User, Case
+from models import db, Organization, User, Case, LogFile, TimelineEvent
 
 
 @pytest.fixture
@@ -45,6 +48,30 @@ def client(app):
     starting a real server.
     """
     return app.test_client()
+
+
+@pytest.fixture
+def test_case(app):
+    """
+    Return a test case for timeline correlation tests.
+    
+    This fixture must be used within the app context.
+    """
+    # Push context to ensure database operations work
+    with app.app_context():
+        case = Case.query.filter_by(case_id="CASE-TEST").first()
+        yield case
+
+
+@pytest.fixture(autouse=True)
+def app_context(app):
+    """
+    Automatically push the app context for all tests.
+    
+    This ensures database operations work in test methods.
+    """
+    with app.app_context():
+        yield
 
 
 def _seed_test_data():

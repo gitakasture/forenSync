@@ -144,13 +144,21 @@ class TimelineEvent(db.Model):
     id = db.Column(db.Integer, primary_key=True)
     case_id = db.Column(db.String(64), db.ForeignKey("cases.case_id"), nullable=False, index=True)
     log_file_id = db.Column(db.Integer, db.ForeignKey("log_files.id"), nullable=True)
-    timestamp = db.Column(db.DateTime, nullable=False, index=True, default=utcnow)
+    timestamp = db.Column(db.DateTime, nullable=True, index=True, default=utcnow)
     timestamp_str = db.Column(db.String(64), nullable=True)
     source = db.Column(db.String(128), nullable=False, default="system")
+    host = db.Column(db.String(256), nullable=True)
+    actor = db.Column(db.String(256), nullable=True)
+    action = db.Column(db.String(128), nullable=True)
+    object = db.Column(db.String(512), nullable=True)
+    result = db.Column(db.String(64), nullable=True)
     event_type = db.Column(db.String(128), nullable=False, default="Log Entry")
     severity = db.Column(db.String(32), nullable=False, default="Info")  # Info | Warning | Critical
     description = db.Column(db.Text, nullable=False)
     raw_log = db.Column(db.Text, nullable=True)
+    raw_log_hash = db.Column(db.String(64), nullable=True)
+    session_id = db.Column(db.String(64), nullable=True, index=True)
+    created_at = db.Column(db.DateTime, default=utcnow)
 
     def to_dict(self):
         return {
@@ -158,10 +166,16 @@ class TimelineEvent(db.Model):
             "caseId": self.case_id,
             "timestamp": self.timestamp_str or (self.timestamp.strftime("%Y-%m-%d %H:%M:%S") if self.timestamp else ""),
             "source": self.source,
+            "host": self.host,
+            "actor": self.actor,
+            "action": self.action,
+            "object": self.object,
+            "result": self.result,
             "eventType": self.event_type,
             "severity": self.severity,
             "description": self.description,
             "rawLog": self.raw_log or "",
+            "sessionId": self.session_id,
         }
 
 
