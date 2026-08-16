@@ -167,6 +167,7 @@ import TopBar from "../components/TopBar";
 import PluginDrawer from "../components/PluginDrawer";
 import { PluginDrawerProvider } from "../components/PluginDrawerContext";
 import CaseDetailModal from "../components/CaseDetailModal";
+import UploadCaseFilesModal from "../components/UploadCaseFilesModal";
 import api from "../utils/api";
 import { getUser } from "../utils/auth";
 
@@ -183,6 +184,7 @@ export default function InvDashboard() {
   const [cases, setCases] = useState([]);
   const [loadingCases, setLoadingCases] = useState(true);
   const [selectedCaseId, setSelectedCaseId] = useState(null);
+  const [uploadCaseId, setUploadCaseId] = useState(null);
 
   const [pendingNotifications, setPendingNotifications] = useState([]);
   const [loadingPending, setLoadingPending] = useState(true);
@@ -340,7 +342,21 @@ export default function InvDashboard() {
                           >
                             👁
                           </button>
-                          <button className="rounded-sm border border-hairline px-2 py-1 text-xs text-ash hover:border-amber hover:text-amber transition-colors" aria-label="More">···</button>
+                          {c.hasFiles ? (
+                            <button
+                              onClick={() => navigate(`/cases/${c.caseId}/files`)}
+                              className="rounded-sm border border-hairline px-2 py-1 text-xs text-ash hover:border-amber hover:text-amber transition-colors"
+                            >
+                              View Details
+                            </button>
+                          ) : (
+                            <button
+                              onClick={() => setUploadCaseId(c.caseId)}
+                              className="rounded-sm border border-hairline px-2 py-1 text-xs text-ash hover:border-amber hover:text-amber transition-colors"
+                            >
+                              Upload Files
+                            </button>
+                          )}
                         </div>
                       </td>
                     </tr>
@@ -362,6 +378,9 @@ export default function InvDashboard() {
         <PluginDrawer />
         {selectedCaseId && (
           <CaseDetailModal caseId={selectedCaseId} onClose={() => setSelectedCaseId(null)} />
+        )}
+        {uploadCaseId && (
+          <UploadCaseFilesModal caseId={uploadCaseId} onClose={() => setUploadCaseId(null)} />
         )}
       </div>
     </PluginDrawerProvider>

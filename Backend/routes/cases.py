@@ -34,6 +34,7 @@ from services.case_service import (
 )
 from services.auth_service import NotFoundError, ServiceError
 from services.activity_service import list_recent_activity
+from services.file_service import upload_case_files
 # from services.case_service import create_case as create_case_service
 # from services.auth_service import NotFoundError, ServiceError
 
@@ -420,3 +421,50 @@ def get_activity():
         })
 
     return cases
+
+@cases_bp.post("/cases/<string:case_id>/files")
+def upload_files(case_id: str):
+    org_id = (request.form.get("orgId") or "").strip()
+    user_id = (request.form.get("userId") or "").strip()
+
+    if not org_id or not user_id:
+        return error_response("orgId and userId are required.", 400, "Bad Request")
+
+    log_files_raw = request.files.getlist("log_files")
+    other_files_raw = request.files.getlist("other_files")
+
+    if not log_files_raw:
+        return error_response("At least one log file is required.", 400, "Bad Request")
+
+    log_files = [(f.filename, f.read(), f.content_type) for f in log_files_raw if f.filename]
+    other_files = [(f.filename, f.read(), f.content_type) for f in other_files_raw if f.filename]
+
+    try:
+        result = upload_case_files(org_id, case_id, user_id, log_files, other_files)
+    except NotFoundError as e:
+        return error_response(str(e), 404, "Not Found")
+    except ServiceError as e:
+        current_app.logger.error("Upload files error: %s", e)
+        return error_response("Failed to upload files.", 500, "Internal Server Error")
+
+    return success_response(data=result, message="Files uploaded successfully.", status_code=201)
+
+from services.file_service import upload_case_files, list_case_files
+
+@cases_bp.get("/cases/<string:case_id>/files")
+def get_case_files(case_id: str):
+    org_id = request.args.get("orgId", "").strip()
+    category = request.args.get("category", "").strip()
+
+    if not org_id:
+        return error_response("orgId query parameter is required.", 400, "Bad Request")
+
+    try:
+        files = list_case_files(org_id, case_id, category=category or None)
+    except NotFoundError as e:
+        return error_response(str(e), 404, "Not Found")
+    except ServiceError as e:
+        current_app.logger.error("List case files error: %s", e)
+        return error_response("Failed to fetch files.", 500, "Internal Server Error")
+
+    return success_response(data={"files": files, "total": len(files)})

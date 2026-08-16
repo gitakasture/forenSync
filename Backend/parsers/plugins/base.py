@@ -20,6 +20,9 @@ class BaseParserPlugin(ABC):
     # gets stamped onto every event this plugin produces.
     source_name: str = "unknown"
 
+    def __init__(self, **kwargs):
+        pass
+
     @abstractmethod
     def parse(self, filepath: str) -> List[Dict]:
         """
@@ -57,3 +60,15 @@ class BaseParserPlugin(ABC):
             "result": result,
             "raw_log": raw_log,
         }
+
+    DETECTION_PATTERNS: list = []
+
+    @classmethod
+    def detect_confidence(cls, sample_lines) -> float:
+        if not sample_lines or not cls.DETECTION_PATTERNS:
+            return 0.0
+        matches = sum(
+            1 for line in sample_lines
+            if any(pattern.search(line) for pattern in cls.DETECTION_PATTERNS)
+        )
+        return matches / len(sample_lines)

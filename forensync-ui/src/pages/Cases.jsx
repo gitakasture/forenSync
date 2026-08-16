@@ -7,6 +7,8 @@ import NewCaseModal from "../components/NewCaseModal";
 import api from "../utils/api";
 import { getUser } from "../utils/auth";
 import CaseDetailModal from "../components/CaseDetailModal";
+import UploadCaseFilesModal from "../components/UploadCaseFilesModal";
+import { isOrgHead } from "../utils/auth";
 
 const statusStyles = {
   Active: "text-teal border-teal/40 bg-teal/10",
@@ -24,6 +26,9 @@ export default function Cases() {
   const user = getUser();
 
   const [selectedCaseId, setSelectedCaseId] = useState(null);
+
+  const head = isOrgHead();
+  const [uploadCaseId, setUploadCaseId] = useState(null);
 
     useEffect(() => {
     if (!user?.orgId || !user?.investigatorId) return;
@@ -122,7 +127,23 @@ export default function Cases() {
                       <td className="px-5 py-3.5">
                         <div className="flex items-center gap-2">
                           <button onClick={() => setSelectedCaseId(c.caseId)} className="rounded-sm border border-hairline p-1.5 text-ash hover:border-amber hover:text-amber transition-colors">👁</button>
-                          <button className="rounded-sm border border-hairline px-2 py-1 text-xs text-ash hover:border-amber hover:text-amber transition-colors">···</button>
+                          {head ? (
+                            <CaseActionsMenu caseId={c.caseId} />
+                          ) : c.hasFiles ? (
+                            <button
+                              onClick={() => navigate(`/cases/${c.caseId}/files`)}
+                              className="rounded-sm border border-hairline px-2 py-1 text-xs text-ash hover:border-amber hover:text-amber transition-colors"
+                            >
+                              View Details
+                            </button>
+                          ) : (
+                            <button
+                              onClick={() => setUploadCaseId(c.caseId)}
+                              className="rounded-sm border border-hairline px-2 py-1 text-xs text-ash hover:border-amber hover:text-amber transition-colors"
+                            >
+                              Upload Files
+                            </button>
+                          )}
                         </div>
                       </td>
                     </tr>
@@ -136,6 +157,9 @@ export default function Cases() {
         {showNewCase && <NewCaseModal onClose={() => setShowNewCase(false)} />}
         {selectedCaseId && (
           <CaseDetailModal caseId={selectedCaseId} onClose={() => setSelectedCaseId(null)} />
+        )}
+        {uploadCaseId && (
+          <UploadCaseFilesModal caseId={uploadCaseId} onClose={() => setUploadCaseId(null)} />
         )}
       </div>
     </PluginDrawerProvider>

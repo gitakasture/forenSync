@@ -139,23 +139,14 @@ def create_case(
 
 
 def _build_display_case(sb, case_row: dict) -> dict:
-    """
-    Converts a raw `cases` row into the shape the frontend expects
-    (matches mockData.js: caseId, investigators as initials, etc.)
-    """
     assignments = (
-        sb.table("case_investigators")
-        .select("user_id")
-        .eq("case_id", case_row["id"])
-        .execute()
+        sb.table("case_investigators").select("user_id").eq("case_id", case_row["id"]).execute()
     )
     investigator_uuids = [a["user_id"] for a in (assignments.data or [])]
 
     initials = []
     if investigator_uuids:
-        users_result = (
-            sb.table("users").select("id, name").in_("id", investigator_uuids).execute()
-        )
+        users_result = sb.table("users").select("id, name").in_("id", investigator_uuids).execute()
         for u in (users_result.data or []):
             parts = u["name"].split()
             initials.append("".join(p[0].upper() for p in parts)[:2])
@@ -163,9 +154,11 @@ def _build_display_case(sb, case_row: dict) -> dict:
     last_updated_raw = case_row.get("updated_at") or case_row.get("created_at")
     last_updated = "—"
     if last_updated_raw:
-        # Supabase timestamptz looks like "2026-08-15T10:30:00+00:00"
         date_part, time_part = last_updated_raw.split("T")
         last_updated = f"{date_part}\n{time_part[:5]}"
+
+    files_result = sb.table("case_files").select("id").eq("case_id", case_row["id"]).limit(1).execute()
+    has_files = len(files_result.data or []) > 0
 
     return {
         "caseId": case_row["case_id"],
@@ -177,8 +170,8 @@ def _build_display_case(sb, case_row: dict) -> dict:
         "extraInvestigators": max(0, len(initials) - 2),
         "lastUpdated": last_updated,
         "status": case_row["status"],
+        "hasFiles": has_files,
     }
-
 
 def list_cases_for_investigator(org_id: str, investigator_user_id: str) -> list[dict]:
     """Cases this investigator has CONFIRMED — used for their dashboard/case list."""

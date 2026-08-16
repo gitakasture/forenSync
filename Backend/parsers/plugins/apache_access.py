@@ -13,6 +13,8 @@ class ApacheAccessParser(BaseParserPlugin):
         r'(?P<status>\d+) (?P<size>\S+)'
     )
 
+    DETECTION_PATTERNS = [LOG_PATTERN]
+
     def parse(self, filepath: str) -> List[Dict]:
         events = []
 

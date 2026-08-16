@@ -33,6 +33,8 @@ class AuthLogParser(BaseParserPlugin):
         r"session opened for user (?P<user>\S+) by \(uid=(?P<uid>\d+)\)"
     )
 
+    DETECTION_PATTERNS = [FAILED_PASSWORD, ACCEPTED_PASSWORD, INVALID_USER, SESSION_OPENED]
+
     # This dataset doesn't include the year, so we assume one.
     # In a real system this would come from file metadata or user input.
     # ASSUMED_YEAR = 2005

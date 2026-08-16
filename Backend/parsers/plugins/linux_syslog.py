@@ -30,6 +30,8 @@ class LinuxSyslogParser(BaseParserPlugin):
         r"ROOT LOGIN ON (?P<tty>\S+)"
     )
 
+    DETECTION_PATTERNS = [FTP_CONNECTION, SESSION_OPENED, SESSION_CLOSED, ROOT_LOGIN]
+
     def parse(self, filepath: str) -> List[Dict]:
         events = []
         current_year = self.starting_year
