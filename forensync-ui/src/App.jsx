@@ -10,6 +10,7 @@ import Plugins from "./pages/Plugins";
 import HeadDashboard from "./pages/HeadDashboard";
 import InvDashboard from "./pages/InvDashboard";
 import CaseFilesPage from "./pages/CaseFilesPage";
+import TimelinePage from "./pages/TimelinePage";
 
 export default function App() {
   return (
@@ -26,6 +27,7 @@ export default function App() {
       <Route path="/help" element={<Help />} />
       <Route path="/plugins" element={<Plugins />} />
       <Route path="/cases/:caseId/files" element={<CaseFilesPage />} />
+      <Route path="/cases/:caseId/timeline" element={<TimelinePage />} />
     </Routes>
   );
 }

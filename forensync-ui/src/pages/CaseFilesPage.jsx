@@ -32,6 +32,8 @@ export default function CaseFilesPage() {
   const [parsing, setParsing] = useState(false);
   const [parseResult, setParseResult] = useState(null);
 
+  const [generatingTimeline, setGeneratingTimeline] = useState(false);
+
   const fetchData = () => {
     if (!caseId || !user?.orgId) return;
     setError("");
@@ -136,6 +138,19 @@ export default function CaseFilesPage() {
       setError(err.response?.data?.message || "Failed to parse files.");
     } finally {
       setParsing(false);
+    }
+  };
+
+  const handleGenerateTimeline = async () => {
+    setGeneratingTimeline(true);
+    setError("");
+    try {
+      await api.post(`/cases/${caseId}/generate-timeline`, { orgId: user.orgId });
+      navigate(`/cases/${caseId}/timeline`);
+    } catch (err) {
+      setError(err.response?.data?.message || "Failed to generate timeline.");
+    } finally {
+      setGeneratingTimeline(false);
     }
   };
 
@@ -269,6 +284,18 @@ export default function CaseFilesPage() {
                   <p className="mb-7 rounded-sm border border-teal/40 bg-teal/10 px-4 py-3 text-sm text-teal">
                     ✓ Parsed {parseResult.filesParsed} file(s) — {parseResult.totalEvents} events extracted.
                   </p>
+                )}
+
+
+                {parseResult && (
+                  <button
+                    type="button"
+                    onClick={handleGenerateTimeline}
+                    disabled={generatingTimeline}
+                    className="mb-7 w-full rounded-sm bg-amber py-2.5 text-sm font-medium text-ink transition-colors hover:bg-amber-hover disabled:opacity-60"
+                  >
+                    {generatingTimeline ? "Generating…" : "Generate Timeline"}
+                  </button>
                 )}
 
 
