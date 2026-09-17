@@ -3,6 +3,7 @@ import Sidebar from "../components/Sidebar";
 import TopBar from "../components/TopBar";
 import PluginDrawer from "../components/PluginDrawer";
 import { PluginDrawerProvider } from "../components/PluginDrawerContext";
+import InvestigatorDetailModal from "../components/InvestigatorDetailModal";
 
 const mockUsers = [
   { initials: "AR", name: "Aditi Rao", id: "INV-2291", role: "Head of Team", cases: 4, status: "Active" },
@@ -15,6 +16,8 @@ const mockUsers = [
 
 export default function UsersTeams() {
   const [search, setSearch] = useState("");
+  const [selectedInvestigator, setSelectedInvestigator] = useState(null);
+  
   const filtered = mockUsers.filter(
     (u) =>
       u.name.toLowerCase().includes(search.toLowerCase()) ||
@@ -66,12 +69,15 @@ export default function UsersTeams() {
                   {filtered.map((u, i) => (
                     <tr key={u.id} className={`${i !== filtered.length - 1 ? "border-b border-hairline" : ""} bg-ink hover:bg-panel transition-colors`}>
                       <td className="px-5 py-3.5">
-                        <div className="flex items-center gap-3">
+                        <button
+                          onClick={() => setSelectedInvestigator(u)}
+                          className="flex items-center gap-3 hover:text-amber transition-colors cursor-pointer text-left w-full"
+                        >
                           <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full border border-amber bg-amber/10 font-mono text-xs font-medium text-amber">
                             {u.initials}
                           </div>
-                          <span className="text-paper">{u.name}</span>
-                        </div>
+                          <span className="text-paper hover:text-amber transition-colors">{u.name}</span>
+                        </button>
                       </td>
                       <td className="px-5 py-3.5 font-mono text-xs text-ash">{u.id}</td>
                       <td className="px-5 py-3.5 text-ash">{u.role}</td>
@@ -96,6 +102,12 @@ export default function UsersTeams() {
           </main>
         </div>
         <PluginDrawer />
+        {selectedInvestigator && (
+          <InvestigatorDetailModal
+            investigator={selectedInvestigator}
+            onClose={() => setSelectedInvestigator(null)}
+          />
+        )}
       </div>
     </PluginDrawerProvider>
   );

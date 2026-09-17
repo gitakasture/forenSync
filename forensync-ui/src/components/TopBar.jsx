@@ -1,8 +1,6 @@
 import { useNavigate } from "react-router-dom";
-// import { mockInvestigator } from "../data/mockData";
-import { getUser, isOrgHead } from "../utils/auth";
+import { getUser, isOrgHead, logout } from "../utils/auth";
 import { usePluginDrawer } from "./PluginDrawerContext";
-// import { isOrgHead } from "../utils/auth";
 import { useState, useEffect } from "react";
 import api from "../utils/api";
 
@@ -13,6 +11,7 @@ export default function TopBar({ onNewCase }) {
   const user = getUser();
 
   const [notifOpen, setNotifOpen] = useState(false);
+  const [profileOpen, setProfileOpen] = useState(false);
   const [notifications, setNotifications] = useState([]);
 
   const fetchNotifications = () => {
@@ -41,13 +40,17 @@ export default function TopBar({ onNewCase }) {
     }
   };
 
+  const handleLogout = () => {
+    logout();
+    navigate("/login");
+  };
+
   return (
     <div className="flex items-center justify-between gap-4 border-b border-hairline bg-panel px-6 py-3">
       {/* Welcome */}
       <div className="shrink-0">
         <p className="text-xs text-ash">Welcome back,</p>
         <p className="font-display text-lg font-semibold text-paper leading-tight">{user?.name || "Unknown User"}</p>
-        <p className="text-xs text-ash">{head ? "Head of Team" : user?.investigatorId}</p>
       </div>
 
       {/* Search */}
@@ -121,6 +124,47 @@ export default function TopBar({ onNewCase }) {
         >
           ···
         </button>
+
+        {/* Profile Dropdown */}
+        <div className="relative">
+          <button
+            onClick={() => setProfileOpen((o) => !o)}
+            className="flex items-center gap-2 rounded-sm border border-hairline px-3 py-1.5 hover:border-amber transition-colors"
+          >
+            <div className="flex h-7 w-7 items-center justify-center rounded-full border border-amber bg-amber/10 font-mono text-xs font-medium text-amber">
+              {user?.name?.split(" ").map((n) => n[0]).join("") || "?"}
+            </div>
+            <span className="text-sm text-paper">{user?.name || "User"}</span>
+            <span className="text-xs text-ash">▾</span>
+          </button>
+
+          {profileOpen && (
+            <div className="absolute right-0 top-11 z-50 w-56 rounded-sm border border-hairline bg-panel p-2 shadow-2xl">
+              <div className="border-b border-hairline pb-2 mb-2 px-2">
+                <p className="text-sm font-medium text-paper">{user?.name || "Unknown User"}</p>
+                <p className="font-mono text-xs text-ash">{head ? "Head of Team" : user?.investigatorId}</p>
+              </div>
+              <button
+                onClick={() => {
+                  setProfileOpen(false);
+                  navigate(head ? "/settings" : "/investigator-settings");
+                }}
+                className="w-full text-left px-2 py-1.5 text-sm text-paper hover:bg-raised rounded-sm transition-colors"
+              >
+                ⚙ Settings
+              </button>
+              <button
+                onClick={() => {
+                  setProfileOpen(false);
+                  handleLogout();
+                }}
+                className="w-full text-left px-2 py-1.5 text-sm text-danger hover:bg-raised rounded-sm transition-colors"
+              >
+                ⏏ Logout
+              </button>
+            </div>
+          )}
+        </div>
       </div>
     </div>
   );

@@ -168,6 +168,7 @@ import PluginDrawer from "../components/PluginDrawer";
 import { PluginDrawerProvider } from "../components/PluginDrawerContext";
 import CaseDetailModal from "../components/CaseDetailModal";
 import UploadCaseFilesModal from "../components/UploadCaseFilesModal";
+import InvestigatorDetailModal from "../components/InvestigatorDetailModal";
 import api from "../utils/api";
 import { getUser } from "../utils/auth";
 
@@ -185,6 +186,7 @@ export default function InvDashboard() {
   const [loadingCases, setLoadingCases] = useState(true);
   const [selectedCaseId, setSelectedCaseId] = useState(null);
   const [uploadCaseId, setUploadCaseId] = useState(null);
+  const [selectedInvestigator, setSelectedInvestigator] = useState(null);
 
   const [pendingNotifications, setPendingNotifications] = useState([]);
   const [loadingPending, setLoadingPending] = useState(true);
@@ -316,9 +318,14 @@ export default function InvDashboard() {
                       <td className="px-4 py-3">
                         <div className="flex items-center gap-1">
                           {(c.investigators || []).slice(0, 2).map((inv) => (
-                            <span key={inv} className="flex h-7 w-7 items-center justify-center rounded-full border border-hairline bg-raised font-mono text-xs text-paper">
+                            <button
+                              key={inv}
+                              onClick={() => setSelectedInvestigator({ id: inv, name: inv })}
+                              className="flex h-7 w-7 items-center justify-center rounded-full border border-hairline bg-raised font-mono text-xs text-paper hover:border-amber hover:bg-amber/10 transition-colors cursor-pointer"
+                              title="Click to view investigator details"
+                            >
                               {inv}
-                            </span>
+                            </button>
                           ))}
                           {(c.extraInvestigators || 0) > 0 && (
                             <span className="flex h-7 w-7 items-center justify-center rounded-full border border-hairline bg-raised font-mono text-xs text-ash">
@@ -347,7 +354,7 @@ export default function InvDashboard() {
                               onClick={() => navigate(`/cases/${c.caseId}/files`)}
                               className="rounded-sm border border-hairline px-2 py-1 text-xs text-ash hover:border-amber hover:text-amber transition-colors"
                             >
-                              View Details
+                              VIEW CASE
                             </button>
                           ) : (
                             <button
@@ -381,6 +388,12 @@ export default function InvDashboard() {
         )}
         {uploadCaseId && (
           <UploadCaseFilesModal caseId={uploadCaseId} onClose={() => setUploadCaseId(null)} />
+        )}
+        {selectedInvestigator && (
+          <InvestigatorDetailModal 
+            investigator={selectedInvestigator} 
+            onClose={() => setSelectedInvestigator(null)} 
+          />
         )}
       </div>
     </PluginDrawerProvider>
