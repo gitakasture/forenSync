@@ -1,6 +1,7 @@
 import { useState } from "react";
 import api from "../utils/api";
 import { getUser } from "../utils/auth";
+import LoadingOverlay from "../components/LoadingOverlay";
 
 export default function EditCaseModal({ caseData, onClose, onUpdated }) {
   const user = getUser();
@@ -28,6 +29,7 @@ export default function EditCaseModal({ caseData, onClose, onUpdated }) {
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 px-4" onClick={onClose}>
+      {saving && <LoadingOverlay label="Saving case…" />}   
       <div className="relative w-full max-w-md rounded-sm border border-hairline bg-panel p-7 shadow-2xl" onClick={(e) => e.stopPropagation()}>
         <h1 className="mb-6 font-display text-xl font-medium text-paper">Edit Case — {caseData.caseId}</h1>
 

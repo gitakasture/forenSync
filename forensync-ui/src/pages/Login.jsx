@@ -3,6 +3,7 @@ import { Link, useNavigate } from "react-router-dom";
 // import { setRole as persistRole } from "../utils/auth";
 import { setUser } from "../utils/auth";
 import api from "../utils/api";
+import LoadingOverlay from "../components/LoadingOverlay";
 
 export default function Login() {
   const navigate = useNavigate();
@@ -62,6 +63,9 @@ export default function Login() {
 
   return (
     <div className="flex min-h-screen items-center justify-center bg-ink px-4">
+
+      {loading && <LoadingOverlay label="Signing in…" />}
+
       <div className="w-full max-w-sm">
         <div className="mb-8 text-center">
           <p className="font-display text-2xl font-semibold text-paper">ForenSync</p>

@@ -55,6 +55,7 @@ export default function Register() {
 
   return (
     <div className="flex min-h-screen items-center justify-center bg-ink px-4 py-10">
+
       <div className="w-full max-w-md">
         <div className="mb-8 text-center">
           <p className="font-display text-2xl font-semibold text-paper">ForenSync</p>

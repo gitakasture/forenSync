@@ -7,6 +7,7 @@ import { PluginDrawerProvider } from "../components/PluginDrawerContext";
 import api from "../utils/api";
 import { getUser } from "../utils/auth";
 import TimelineSwimlane from "../components/TimelineSwimlane";
+import LoadingOverlay from "../components/LoadingOverlay";
 
 function formatTime(ts) {
   if (!ts) return "Unknown";
@@ -134,6 +135,9 @@ export default function TimelinePage() {
   return (
     <PluginDrawerProvider>
       <div className="relative flex h-screen bg-ink">
+
+        {loading && <LoadingOverlay label="Loading timeline…" />}
+
         <Sidebar />
         <div className="flex flex-1 flex-col overflow-hidden">
           <TopBar />

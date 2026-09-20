@@ -1,6 +1,7 @@
 import { useEffect, useState } from "react";
 import api from "../utils/api";
 import { getUser } from "../utils/auth";
+import LoadingOverlay from "../components/LoadingOverlay";
 
 export default function CaseDetailModal({ caseId, onClose }) {
   const [detail, setDetail] = useState(null);
@@ -19,6 +20,7 @@ export default function CaseDetailModal({ caseId, onClose }) {
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 px-4" onClick={onClose}>
+      {loading && <LoadingOverlay label="Loading case…" />}
       <div
         className="relative w-full max-w-lg rounded-sm border border-hairline bg-panel p-7 shadow-2xl"
         onClick={(e) => e.stopPropagation()}

@@ -12,6 +12,7 @@ import { getUser } from "../utils/auth";
 import CaseDetailModal from "../components/CaseDetailModal";
 import UploadCaseFilesModal from "../components/UploadCaseFilesModal";
 import { isOrgHead } from "../utils/auth";
+import LoadingOverlay from "../components/LoadingOverlay";
 
 const statusStyles = {
   Active: "text-teal border-teal/40 bg-teal/10",
@@ -71,6 +72,9 @@ export default function Cases() {
   return (
   
       <div className="relative flex h-screen bg-ink">
+
+        {loading && <LoadingOverlay label="Loading cases…" />}
+
         <Sidebar />
         <div className="flex flex-1 flex-col overflow-hidden">
           <TopBar onNewCase={() => setShowNewCase(true)} />

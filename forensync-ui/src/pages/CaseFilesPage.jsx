@@ -5,6 +5,7 @@ import TopBar from "../components/TopBar";
 // import PluginDrawer from "../components/PluginDrawer";
 // import { PluginDrawerProvider } from "../components/PluginDrawerContext";
 import api from "../utils/api";
+import LoadingOverlay from "../components/LoadingOverlay";
 import { getUser } from "../utils/auth";
 
 function formatSize(bytes) {
@@ -157,6 +158,19 @@ export default function CaseFilesPage() {
   return (
     
       <div className="relative flex h-screen bg-ink">
+
+        {(loading || matching || parsing || generatingTimeline || saving) && (
+          <LoadingOverlay
+            label={
+              loading ? "Loading case files…" :
+              matching ? "Matching parsers to log format…" :
+              parsing ? "Parsing log files…" :
+              generatingTimeline ? "Correlating events…" :
+              "Saving…"
+            }
+          />
+        )}
+
         <Sidebar />
         <div className="flex flex-1 flex-col overflow-hidden">
           <TopBar />

@@ -3,6 +3,8 @@ import Sidebar from "../components/Sidebar";
 import TopBar from "../components/TopBar";
 import api from "../utils/api";
 import { getUser } from "../utils/auth";
+import LoadingOverlay from "../components/LoadingOverlay";
+
 // =======
 // import PluginDrawer from "../components/PluginDrawer";
 // import { PluginDrawerProvider } from "../components/PluginDrawerContext";
@@ -62,6 +64,7 @@ export default function UsersTeams() {
 
   return (
     <div className="relative flex h-screen bg-ink">
+      {loading && <LoadingOverlay label="Loading users…" />}
       <Sidebar />
       <div className="flex flex-1 flex-col overflow-hidden">
         <TopBar />

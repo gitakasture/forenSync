@@ -1,6 +1,7 @@
 import { useEffect, useState } from "react";
 import api from "../utils/api";
 import { getUser } from "../utils/auth";
+
 import { useNavigate } from "react-router-dom";
 
 export default function UploadCaseFilesModal({ caseId, onClose }) {
@@ -51,6 +52,7 @@ export default function UploadCaseFilesModal({ caseId, onClose }) {
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 px-4" onClick={onClose}>
+
       <div
         className="relative w-full max-w-lg max-h-[90vh] overflow-y-auto rounded-sm border border-hairline bg-panel p-7 shadow-2xl"
         onClick={(e) => e.stopPropagation()}

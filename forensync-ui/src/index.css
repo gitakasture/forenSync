@@ -78,3 +78,16 @@
   --color-ash: 107 114 128;
   --color-paper: 26 31 38;
 }
+
+@keyframes scan-line {
+  0% { transform: translateX(-100%); }
+  50% { transform: translateX(250%); }
+  100% { transform: translateX(-100%); }
+}
+
+@keyframes glass-sweep {
+  0%, 100% { transform: translate(0, 0); }
+  25% { transform: translate(30%, -20%); }
+  50% { transform: translate(10%, 20%); }
+  75% { transform: translate(-20%, 5%); }
+}
