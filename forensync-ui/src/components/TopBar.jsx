@@ -143,6 +143,7 @@ export default function TopBar({ onNewCase }) {
   const user = getUser();
 
   const [notifOpen, setNotifOpen] = useState(false);
+  const [profileOpen, setProfileOpen] = useState(false);
   const [notifications, setNotifications] = useState([]);
   const [menuOpen, setMenuOpen] = useState(false);
   const [activeModal, setActiveModal] = useState(null); // "profile" | "investigators" | "settings" | "logout"
@@ -173,12 +174,16 @@ export default function TopBar({ onNewCase }) {
     }
   };
 
+  const handleLogout = () => {
+    logout();
+    navigate("/login");
+  };
+
   return (
     <div className="flex items-center justify-between gap-4 border-b border-hairline bg-panel px-6 py-3">
       <div className="shrink-0">
         <p className="text-xs text-ash">Welcome back,</p>
         <p className="font-display text-lg font-semibold text-paper leading-tight">{user?.name || "Unknown User"}</p>
-        <p className="text-xs text-ash">{head ? "Head of Team" : user?.investigatorId}</p>
       </div>
 
       <div className="flex-1" />
@@ -268,6 +273,7 @@ export default function TopBar({ onNewCase }) {
                 className="block w-full px-4 py-2.5 text-left text-sm text-danger hover:bg-raised transition-colors"
               >
                 Logout
+
               </button>
             </div>
           )}

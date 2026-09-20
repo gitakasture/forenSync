@@ -6,6 +6,7 @@ import TopBar from "../components/TopBar";
 // import { PluginDrawerProvider } from "../components/PluginDrawerContext";
 import NewCaseModal from "../components/NewCaseModal";
 import CaseActionsMenu from "../components/CaseActionsMenu";
+import InvestigatorDetailModal from "../components/InvestigatorDetailModal";
 import api from "../utils/api";
 import { getUser } from "../utils/auth";
 import CaseDetailModal from "../components/CaseDetailModal";
@@ -19,7 +20,7 @@ const statusStyles = {
 };
 
 export default function Cases() {
-  
+
   const navigate = useNavigate();
   const [showNewCase, setShowNewCase] = useState(false);
   const [filter, setFilter] = useState("All");
@@ -29,6 +30,7 @@ export default function Cases() {
   const user = getUser();
 
   const [selectedCaseId, setSelectedCaseId] = useState(null);
+  const [selectedInvestigator, setSelectedInvestigator] = useState(null);
 
   const [searchTerm, setSearchTerm] = useState("");
 
@@ -132,9 +134,14 @@ export default function Cases() {
                       <td className="px-5 py-3.5">
                         <div className="flex items-center gap-1">
                           {(c.investigators || []).slice(0, 2).map((inv) => (
-                            <span key={inv} className="flex h-7 w-7 items-center justify-center rounded-full border border-hairline bg-raised font-mono text-xs text-paper">
+                            <button
+                              key={inv}
+                              onClick={() => setSelectedInvestigator({ id: inv, name: inv })}
+                              className="flex h-7 w-7 items-center justify-center rounded-full border border-hairline bg-raised font-mono text-xs text-paper hover:border-amber hover:bg-amber/10 transition-colors cursor-pointer"
+                              title="Click to view investigator details"
+                            >
                               {inv}
-                            </span>
+                            </button>
                           ))}
                           {(c.extraInvestigators || 0) > 0 && (
                             <span className="flex h-7 w-7 items-center justify-center rounded-full border border-hairline bg-raised font-mono text-xs text-ash">
@@ -159,7 +166,7 @@ export default function Cases() {
                               onClick={() => navigate(`/cases/${c.caseId}/files`)}
                               className="rounded-sm border border-hairline px-2 py-1 text-xs text-ash hover:border-amber hover:text-amber transition-colors"
                             >
-                              View Details
+                              VIEW CASE
                             </button>
                           ) : (
                             <button
@@ -184,6 +191,12 @@ export default function Cases() {
         )}
         {uploadCaseId && (
           <UploadCaseFilesModal caseId={uploadCaseId} onClose={() => setUploadCaseId(null)} />
+        )}
+        {selectedInvestigator && (
+          <InvestigatorDetailModal 
+            investigator={selectedInvestigator} 
+            onClose={() => setSelectedInvestigator(null)} 
+          />
         )}
       </div>
     

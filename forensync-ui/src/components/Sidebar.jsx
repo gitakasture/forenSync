@@ -1,21 +1,15 @@
-import { NavLink, useNavigate } from "react-router-dom";
-// import { mockInvestigator } from "../data/mockData";
-import { getUser, isOrgHead, logout } from "../utils/auth";
-// import { isOrgHead, logout } from "../utils/auth";
+import { NavLink } from "react-router-dom";
+import { isOrgHead } from "../utils/auth";
 
 const baseNavItems = [
-  // { label: "Dashboard", to: "/dashboard", icon: "⊞" },
   { label: "Cases", to: "/cases", icon: "☰" },
-  // { label: "Users & Teams", to: "/users", icon: "👥" },
 ];
 
 const investigatorOnlyNavItems = [
   { label: "Parser Plugins", to: "/plugins", icon: "🧩" },
 ];
 
-const headOnlyNavItems = [
-  { label: "System Settings", to: "/settings", icon: "⚙" },
-];
+const headOnlyNavItems = [];
 
 const sharedNavItems = [
   { label: "Users & Teams", to: "/users", icon: "👥" },
@@ -26,9 +20,7 @@ const trailingNavItems = [
 ];
 
 export default function Sidebar() {
-  const navigate = useNavigate();
   const head = isOrgHead();
-  const user = getUser();
 
   const dashboardItem = {
     label: "Dashboard",
@@ -36,19 +28,22 @@ export default function Sidebar() {
     icon: "⊞",
   };
 
+  // Settings item only for heads - investigators access via profile dropdown
+  const settingsItem = head ? {
+    label: "System Settings",
+    to: "/settings",
+    icon: "⚙",
+  } : null;
+
   const navItems = [
     dashboardItem,
     ...baseNavItems,
     ...(head ? [] : investigatorOnlyNavItems),
     ...sharedNavItems,
     ...(head ? headOnlyNavItems : []),
+    ...(settingsItem ? [settingsItem] : []),
     ...trailingNavItems,
   ];
-
-  const handleLogout = () => {
-    logout();
-    navigate("/login");
-  };
 
   return (
     <aside className="flex h-full w-56 shrink-0 flex-col border-r border-hairline bg-panel">
@@ -84,28 +79,6 @@ export default function Sidebar() {
           ))}
         </ul>
       </nav>
-
-      <div className="border-t border-hairline px-4 py-4">
-        <div className="flex items-center gap-3">
-          <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full border border-amber bg-amber/10 font-mono text-xs font-medium text-amber">
-            {user?.name?.split(" ").map((n) => n[0]).join("") || "?"}
-          </div>
-          <div className="min-w-0 flex-1">
-            <p className="truncate text-sm text-paper">{user?.name || "Unknown User"}</p>
-            <p className="truncate font-mono text-[11px] text-ash">
-              {head ? "Head of Team" : user?.investigatorId}
-            </p>
-          </div>
-          <button
-            onClick={handleLogout}
-            className="shrink-0 text-xs text-ash hover:text-danger"
-            aria-label="Logout"
-            title="Logout"
-          >
-            ⏏
-          </button>
-        </div>
-      </div>
     </aside>
   );
 }

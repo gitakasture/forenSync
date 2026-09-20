@@ -9,6 +9,36 @@
   body {
     @apply bg-ink text-paper font-sans antialiased;
   }
+  
+  /* Light theme */
+  [data-theme="light"] body {
+    @apply bg-paper text-ink;
+  }
+  
+  [data-theme="light"] .bg-ink {
+    @apply bg-paper;
+  }
+  
+  [data-theme="light"] .bg-panel {
+    @apply bg-white border-gray-200;
+  }
+  
+  [data-theme="light"] .bg-raised {
+    @apply bg-gray-50;
+  }
+  
+  [data-theme="light"] .text-paper {
+    @apply text-gray-900;
+  }
+  
+  [data-theme="light"] .text-ash {
+    @apply text-gray-600;
+  }
+  
+  [data-theme="light"] .border-hairline {
+    @apply border-gray-200;
+  }
+  
   ::selection {
     @apply bg-amber/30 text-paper;
   }

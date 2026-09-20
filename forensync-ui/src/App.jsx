@@ -5,6 +5,7 @@ import Dashboard from "./pages/Dashboard";
 import Cases from "./pages/Cases";
 import UsersTeams from "./pages/UsersTeams";
 import SystemSettings from "./pages/SystemSettings";
+import InvestigatorSettings from "./pages/InvestigatorSettings";
 import Help from "./pages/Help";
 import Plugins from "./pages/Plugins";
 import HeadDashboard from "./pages/HeadDashboard";
@@ -24,6 +25,7 @@ export default function App() {
       <Route path="/cases" element={<Cases />} />
       <Route path="/users" element={<UsersTeams />} />
       <Route path="/settings" element={<SystemSettings />} />
+      <Route path="/investigator-settings" element={<InvestigatorSettings />} />
       <Route path="/help" element={<Help />} />
       <Route path="/plugins" element={<Plugins />} />
       <Route path="/cases/:caseId/files" element={<CaseFilesPage />} />
