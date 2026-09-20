@@ -65,10 +65,21 @@ class BaseParserPlugin(ABC):
 
     @classmethod
     def detect_confidence(cls, sample_lines) -> float:
-        if not sample_lines or not cls.DETECTION_PATTERNS:
+        if not sample_lines:
             return 0.0
-        matches = sum(
+
+        specific_matches = sum(
             1 for line in sample_lines
             if any(pattern.search(line) for pattern in cls.DETECTION_PATTERNS)
         )
-        return matches / len(sample_lines)
+
+        # Partial credit: does the line at least match this plugin's general
+        # prefix structure, even if not one of the specifically-recognized events?
+        structural_matches = 0
+        if hasattr(cls, "PREFIX_PATTERN"):
+            structural_matches = sum(1 for line in sample_lines if cls.PREFIX_PATTERN.match(line))
+
+        # Specific event matches count fully; lines that merely fit the
+        # structure (but aren't a recognized event) count at half weight.
+        weighted_score = specific_matches + 0.5 * max(0, structural_matches - specific_matches)
+        return min(weighted_score / len(sample_lines), 1.0)
