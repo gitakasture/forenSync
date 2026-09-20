@@ -1,6 +1,6 @@
 import { useState, useEffect } from "react";
 import api from "../utils/api";
-import { getUser } from "../utils/auth";
+import { getUser } from "../utils/auth";import LoadingOverlay from "../components/LoadingOverlay";
 
 function getTodayISO() {
   return new Date().toISOString().split("T")[0];
@@ -65,6 +65,8 @@ export default function NewCaseModal({ onClose }) {
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 px-4" onClick={onClose}>
+      {(loadingInvestigators || submitting) && <LoadingOverlay label="Loading…" />}
+
       <div className="relative w-full max-w-lg rounded-sm border border-hairline bg-panel p-7 shadow-2xl" onClick={(e) => e.stopPropagation()}>
         <h1 className="mb-1 font-display text-xl font-medium text-paper">New Case</h1>
         <p className="mb-6 text-sm text-ash">Create a case and assign investigators.</p>

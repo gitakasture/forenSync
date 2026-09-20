@@ -5,6 +5,7 @@ import PluginDrawer from "../components/PluginDrawer";
 import { PluginDrawerProvider } from "../components/PluginDrawerContext";
 import api from "../utils/api";
 import { getUser } from "../utils/auth";
+import LoadingOverlay from "../components/LoadingOverlay";
 
 export default function Plugins() {
   const user = getUser();
@@ -116,6 +117,7 @@ export default function Plugins() {
   return (
     <PluginDrawerProvider>
       <div className="relative flex h-screen bg-ink">
+        {(loading || busyName) && <LoadingOverlay label="Loading plugins…" />}
         <Sidebar />
         <div className="flex flex-1 flex-col overflow-hidden">
           <TopBar />

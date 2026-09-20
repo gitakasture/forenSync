@@ -2,6 +2,8 @@ import { useEffect, useState } from "react";
 import api from "../utils/api";
 import { getUser } from "../utils/auth";
 import { getTheme, applyTheme } from "../utils/theme";
+import LoadingOverlay from "../components/LoadingOverlay";
+
 
 export default function SystemSettingsModal({ onClose }) {
   const user = getUser();
@@ -46,6 +48,7 @@ export default function SystemSettingsModal({ onClose }) {
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 px-4" onClick={onClose}>
+      {(loading || saving) && <LoadingOverlay label="Loading settings…" />}
       <div className="relative w-full max-w-md rounded-sm border border-hairline bg-panel p-7 shadow-2xl" onClick={(e) => e.stopPropagation()}>
         <h1 className="mb-1 font-display text-xl font-medium text-paper">System Settings</h1>
         <p className="mb-6 text-sm text-ash">Default behavior for new cases and timelines in your organization.</p>
@@ -101,7 +104,7 @@ export default function SystemSettingsModal({ onClose }) {
               </div>
               <p className="mt-1 text-[11px] text-ash">Applies instantly, saved only on this device.</p>
             </div>
-            
+
           </div>
         )}
 
