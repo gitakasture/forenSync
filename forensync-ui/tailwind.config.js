@@ -1,15 +1,16 @@
 /** @type {import('tailwindcss').Config} */
 export default {
   content: ["./index.html", "./src/**/*.{js,ts,jsx,tsx}"],
+  darkMode: "class",
   theme: {
     extend: {
       colors: {
-        ink: "#12161B",
-        panel: "#1A1F26",
-        raised: "#20262E",
-        hairline: "#2B333C",
-        ash: "#8B93A0",
-        paper: "#E9E7E2",
+        ink: "rgb(var(--color-ink) / <alpha-value>)",
+        panel: "rgb(var(--color-panel) / <alpha-value>)",
+        raised: "rgb(var(--color-raised) / <alpha-value>)",
+        hairline: "rgb(var(--color-hairline) / <alpha-value>)",
+        ash: "rgb(var(--color-ash) / <alpha-value>)",
+        paper: "rgb(var(--color-paper) / <alpha-value>)",
         amber: {
           DEFAULT: "#E8A33D",
           hover: "#F0B458",

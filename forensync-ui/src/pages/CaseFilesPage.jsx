@@ -2,8 +2,8 @@ import { useEffect, useState } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import Sidebar from "../components/Sidebar";
 import TopBar from "../components/TopBar";
-import PluginDrawer from "../components/PluginDrawer";
-import { PluginDrawerProvider } from "../components/PluginDrawerContext";
+// import PluginDrawer from "../components/PluginDrawer";
+// import { PluginDrawerProvider } from "../components/PluginDrawerContext";
 import api from "../utils/api";
 import { getUser } from "../utils/auth";
 
@@ -155,7 +155,7 @@ export default function CaseFilesPage() {
   };
 
   return (
-    <PluginDrawerProvider>
+    
       <div className="relative flex h-screen bg-ink">
         <Sidebar />
         <div className="flex flex-1 flex-col overflow-hidden">
@@ -318,8 +318,8 @@ export default function CaseFilesPage() {
             )}
           </main>
         </div>
-        <PluginDrawer />
+        
       </div>
-    </PluginDrawerProvider>
+   
   );
 }

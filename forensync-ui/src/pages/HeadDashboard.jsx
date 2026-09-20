@@ -189,10 +189,11 @@ import Sidebar from "../components/Sidebar";
 import TopBar from "../components/TopBar";
 import NewCaseModal from "../components/NewCaseModal";
 import CaseDetailModal from "../components/CaseDetailModal";
-import PluginDrawer from "../components/PluginDrawer";
-import { PluginDrawerProvider } from "../components/PluginDrawerContext";
+// import PluginDrawer from "../components/PluginDrawer";
+// import { PluginDrawerProvider } from "../components/PluginDrawerContext";
 import api from "../utils/api";
 import { getUser } from "../utils/auth";
+import CaseActionsMenu from "../components/CaseActionsMenu";
 
 const statusStyles = {
   Active: "text-teal border-teal/40 bg-teal/10",
@@ -215,6 +216,7 @@ export default function Dashboard() {
   const [loadingCases, setLoadingCases] = useState(true);
   const [activity, setActivity] = useState([]);
   const [loadingActivity, setLoadingActivity] = useState(true);
+  const [searchTerm, setSearchTerm] = useState("");
 
   const fetchCases = () => {
     if (!user?.orgId || !user?.investigatorId) return;
@@ -234,15 +236,23 @@ export default function Dashboard() {
       .finally(() => setLoadingActivity(false));
   };
 
+ 
   useEffect(() => {
     fetchCases();
     fetchActivity();
   }, []);
 
-  const activeCases = cases.filter((c) => c.status === "Active");
+  const activeCases = cases
+    .filter((c) => c.status === "Active")
+    .filter((c) =>
+      searchTerm.trim() === "" ||
+      c.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      c.caseId.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      c.status.toLowerCase().includes(searchTerm.toLowerCase())
+    );
 
   return (
-    <PluginDrawerProvider>
+    
       <div className="relative flex h-screen bg-ink">
         <Sidebar />
 
@@ -252,8 +262,18 @@ export default function Dashboard() {
           <main className="flex-1 overflow-y-auto px-8 py-6">
 
             {/* Active Cases */}
-            <div className="mb-1 flex items-center justify-between">
+            <div className="mb-3 flex items-center justify-between">
               <h2 className="font-display text-base font-medium text-paper">Active Cases</h2>
+              <div className="relative w-64">
+                <span className="pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 text-ash text-sm">⌕</span>
+                <input
+                  type="text"
+                  value={searchTerm}
+                  onChange={(e) => setSearchTerm(e.target.value)}
+                  placeholder="Search case ID or name…"
+                  className="w-full rounded-sm border border-hairline bg-ink py-1.5 pl-9 pr-3 text-xs text-paper placeholder:text-ash focus:border-amber outline-none"
+                />
+              </div>
             </div>
 
             <div className="overflow-hidden rounded-sm border border-hairline mb-2">
@@ -315,7 +335,7 @@ export default function Dashboard() {
                           >
                             👁
                           </button>
-                          <button className="rounded-sm border border-hairline px-2 py-1 text-xs text-ash hover:border-amber hover:text-amber transition-colors" aria-label="More">···</button>
+                          <CaseActionsMenu caseData={c} onUpdated={fetchCases} />
                         </div>
                       </td>
                     </tr>
@@ -379,12 +399,12 @@ export default function Dashboard() {
           </main>
         </div>
 
-        <PluginDrawer />
+        
         {showNewCase && <NewCaseModal onClose={() => setShowNewCase(false)} />}
         {selectedCaseId && (
           <CaseDetailModal caseId={selectedCaseId} onClose={() => setSelectedCaseId(null)} />
         )}
       </div>
-    </PluginDrawerProvider>
+
   );
 }

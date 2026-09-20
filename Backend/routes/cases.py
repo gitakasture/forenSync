@@ -37,6 +37,11 @@ from services.activity_service import list_recent_activity
 from services.file_service import upload_case_files
 # from services.case_service import create_case as create_case_service
 # from services.auth_service import NotFoundError, ServiceError
+from services.case_service import (
+    update_case_details, update_case_status,
+    get_case_investigators, add_case_investigator, remove_case_investigator,
+)
+from services.auth_service import ConflictError
 
 
 cases_bp = Blueprint("cases", __name__)
@@ -325,7 +330,7 @@ def create_case():
     description = (body.get("description") or "").strip()
     date_from = (body.get("from") or "").strip()
     date_to = (body.get("to") or "").strip()
-    priority = (body.get("priority") or "Medium Priority").strip()
+    priority = (body.get("priority") or "").strip()
     org_id = (body.get("orgId") or "").strip()
     created_by = (body.get("createdBy") or "").strip()
     investigator_ids = body.get("investigatorIds") or []
@@ -468,3 +473,97 @@ def get_case_files(case_id: str):
         return error_response("Failed to fetch files.", 500, "Internal Server Error")
 
     return success_response(data={"files": files, "total": len(files)})
+
+
+@cases_bp.put("/cases/<string:case_id>")
+def update_case(case_id: str):
+    body = request.get_json(silent=True) or {}
+    org_id = (body.get("orgId") or "").strip()
+    if not org_id:
+        return error_response("orgId is required.", 400, "Bad Request")
+
+    try:
+        result = update_case_details(
+            org_id, case_id,
+            name=(body.get("name") or "").strip(),
+            description=body.get("description"),
+            priority=(body.get("priority") or "").strip(),
+        )
+    except NotFoundError as e:
+        return error_response(str(e), 404, "Not Found")
+    except ServiceError as e:
+        return error_response(str(e), 500, "Internal Server Error")
+
+    return success_response(data=result, message="Case updated.")
+
+
+@cases_bp.patch("/cases/<string:case_id>/status")
+def change_case_status(case_id: str):
+    body = request.get_json(silent=True) or {}
+    org_id = (body.get("orgId") or "").strip()
+    new_status = (body.get("status") or "").strip()
+
+    if not org_id or new_status not in ("Active", "Closed", "Pending"):
+        return error_response("orgId and a valid status are required.", 400, "Bad Request")
+
+    try:
+        result = update_case_status(org_id, case_id, new_status)
+    except NotFoundError as e:
+        return error_response(str(e), 404, "Not Found")
+    except ServiceError as e:
+        return error_response(str(e), 500, "Internal Server Error")
+
+    return success_response(data=result, message="Status updated.")
+
+
+@cases_bp.get("/cases/<string:case_id>/investigators")
+def list_case_investigators(case_id: str):
+    org_id = request.args.get("orgId", "").strip()
+    if not org_id:
+        return error_response("orgId query parameter is required.", 400, "Bad Request")
+
+    try:
+        investigators = get_case_investigators(org_id, case_id)
+    except NotFoundError as e:
+        return error_response(str(e), 404, "Not Found")
+    except ServiceError as e:
+        return error_response(str(e), 500, "Internal Server Error")
+
+    return success_response(data={"investigators": investigators})
+
+
+@cases_bp.post("/cases/<string:case_id>/investigators")
+def add_investigator_to_case(case_id: str):
+    body = request.get_json(silent=True) or {}
+    org_id = (body.get("orgId") or "").strip()
+    investigator_id = (body.get("investigatorId") or "").strip()
+
+    if not org_id or not investigator_id:
+        return error_response("orgId and investigatorId are required.", 400, "Bad Request")
+
+    try:
+        result = add_case_investigator(org_id, case_id, investigator_id)
+    except NotFoundError as e:
+        return error_response(str(e), 404, "Not Found")
+    except ConflictError as e:
+        return error_response(str(e), 409, "Conflict")
+    except ServiceError as e:
+        return error_response(str(e), 500, "Internal Server Error")
+
+    return success_response(data=result, message="Investigator added.", status_code=201)
+
+
+@cases_bp.delete("/cases/<string:case_id>/investigators/<string:investigator_id>")
+def remove_investigator_from_case(case_id: str, investigator_id: str):
+    org_id = request.args.get("orgId", "").strip()
+    if not org_id:
+        return error_response("orgId query parameter is required.", 400, "Bad Request")
+
+    try:
+        result = remove_case_investigator(org_id, case_id, investigator_id)
+    except NotFoundError as e:
+        return error_response(str(e), 404, "Not Found")
+    except ServiceError as e:
+        return error_response(str(e), 500, "Internal Server Error")
+
+    return success_response(data=result, message="Investigator removed.")

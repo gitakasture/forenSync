@@ -106,7 +106,9 @@ Endpoints:
 from flask import Blueprint, request, current_app
 from utils.response import success_response, error_response
 from services.user_service import list_users
-from services.auth_service import NotFoundError, ServiceError
+from services.user_service import add_investigator
+from services.auth_service import NotFoundError, ServiceError, ConflictError
+from services.user_service import list_users, update_user_status
 
 users_bp = Blueprint("users", __name__)
 
@@ -133,3 +135,44 @@ def list_users_route():
         return error_response("An unexpected error occurred.", 500, "Internal Server Error")
 
     return success_response(data={"users": users, "total": len(users)})
+
+@users_bp.post("/users")
+def add_investigator_route():
+    body = request.get_json(silent=True) or {}
+    org_id = (body.get("orgId") or "").strip()
+    investigator_id = (body.get("id") or "").strip()
+    investigator_name = (body.get("name") or "").strip()
+
+    if not org_id or not investigator_id or not investigator_name:
+        return error_response("orgId, id, and name are required.", 400, "Bad Request")
+
+    try:
+        new_user = add_investigator(org_id, investigator_id, investigator_name)
+    except NotFoundError as e:
+        return error_response(str(e), 404, "Not Found")
+    except ConflictError as e:
+        return error_response(str(e), 409, "Conflict")
+    except ServiceError as e:
+        current_app.logger.error("Add investigator error: %s", e)
+        return error_response("Failed to add investigator.", 500, "Internal Server Error")
+
+    return success_response(data=new_user, message="Investigator added.", status_code=201)
+
+@users_bp.patch("/users/<string:user_id>/status")
+def update_status(user_id: str):
+    body = request.get_json(silent=True) or {}
+    org_id = (body.get("orgId") or "").strip()
+    new_status = (body.get("status") or "").strip()
+
+    if not org_id or new_status not in ("Active", "Inactive"):
+        return error_response("orgId and a valid status ('Active' or 'Inactive') are required.", 400, "Bad Request")
+
+    try:
+        result = update_user_status(org_id, user_id, new_status)
+    except NotFoundError as e:
+        return error_response(str(e), 404, "Not Found")
+    except ServiceError as e:
+        current_app.logger.error("Update user status error: %s", e)
+        return error_response("Failed to update status.", 500, "Internal Server Error")
+
+    return success_response(data=result, message="Status updated.")

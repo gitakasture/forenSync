@@ -123,7 +123,8 @@ def parse_status(case_id: str):
 def generate_timeline_route(case_id: str):
     body = request.get_json(silent=True) or {}
     org_id = (body.get("orgId") or "").strip()
-    window_minutes = int(body.get("windowMinutes", 30))
+    window_minutes = body.get("windowMinutes")
+    window_minutes = int(window_minutes) if window_minutes else None
 
     if not org_id:
         return error_response("orgId is required.", 400, "Bad Request")

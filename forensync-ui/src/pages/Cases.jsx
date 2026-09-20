@@ -1,9 +1,11 @@
 import { useState, useEffect } from "react";
+import { useNavigate } from "react-router-dom";
 import Sidebar from "../components/Sidebar";
 import TopBar from "../components/TopBar";
-import PluginDrawer from "../components/PluginDrawer";
-import { PluginDrawerProvider } from "../components/PluginDrawerContext";
+// import PluginDrawer from "../components/PluginDrawer";
+// import { PluginDrawerProvider } from "../components/PluginDrawerContext";
 import NewCaseModal from "../components/NewCaseModal";
+import CaseActionsMenu from "../components/CaseActionsMenu";
 import api from "../utils/api";
 import { getUser } from "../utils/auth";
 import CaseDetailModal from "../components/CaseDetailModal";
@@ -18,6 +20,7 @@ const statusStyles = {
 
 export default function Cases() {
   
+  const navigate = useNavigate();
   const [showNewCase, setShowNewCase] = useState(false);
   const [filter, setFilter] = useState("All");
 
@@ -27,10 +30,12 @@ export default function Cases() {
 
   const [selectedCaseId, setSelectedCaseId] = useState(null);
 
+  const [searchTerm, setSearchTerm] = useState("");
+
   const head = isOrgHead();
   const [uploadCaseId, setUploadCaseId] = useState(null);
 
-    useEffect(() => {
+  const fetchCases = () => {
     if (!user?.orgId || !user?.investigatorId) return;
 
     api
@@ -46,15 +51,23 @@ export default function Cases() {
       })
       .catch(console.error)
       .finally(() => setLoading(false));
+  };
+
+  useEffect(() => {
+    fetchCases();
   }, []);
 
-  const filtered =
-    filter === "All"
-      ? cases
-      : cases.filter((c) => c.status === filter);
+  const filtered = cases
+    .filter((c) => filter === "All" || c.status === filter)
+    .filter((c) =>
+      searchTerm.trim() === "" ||
+      c.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      c.caseId.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      c.status.toLowerCase().includes(searchTerm.toLowerCase())
+  );
 
   return (
-    <PluginDrawerProvider>
+  
       <div className="relative flex h-screen bg-ink">
         <Sidebar />
         <div className="flex flex-1 flex-col overflow-hidden">
@@ -63,23 +76,35 @@ export default function Cases() {
 
             <div className="mb-5 flex items-center justify-between">
               <h1 className="font-display text-lg font-medium text-paper">All Cases</h1>
-              <div className="flex gap-2">
-                {["All", "Active", "Pending", "Closed"].map((s) => (
-                  <button
-                    key={s}
-                    onClick={() => setFilter(s)}
-                    className={`rounded-sm border px-3 py-1.5 text-xs transition-colors ${
-                      filter === s
-                        ? "border-amber bg-amber/10 text-amber"
-                        : "border-hairline text-ash hover:border-amber hover:text-amber"
-                    }`}
-                  >
-                    {s}
-                  </button>
-                ))}
+              <div className="flex items-center gap-3">
+                <div className="relative w-64">
+                  <span className="pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 text-ash text-sm">⌕</span>
+                  <input
+                    type="text"
+                    value={searchTerm}
+                    onChange={(e) => setSearchTerm(e.target.value)}
+                    placeholder="Search case ID, name, status…"
+                    className="w-full rounded-sm border border-hairline bg-ink py-1.5 pl-9 pr-3 text-xs text-paper placeholder:text-ash focus:border-amber outline-none"
+                  />
+                </div>
+                <div className="flex gap-2">
+                  {["All", "Active", "Pending", "Closed"].map((s) => (
+                    <button
+                      key={s}
+                      onClick={() => setFilter(s)}
+                      className={`rounded-sm border px-3 py-1.5 text-xs transition-colors ${
+                        filter === s
+                          ? "border-amber bg-amber/10 text-amber"
+                          : "border-hairline text-ash hover:border-amber hover:text-amber"
+                      }`}
+                    >
+                      {s}
+                    </button>
+                  ))}
+                </div>
               </div>
             </div>
-
+            
             <div className="overflow-hidden rounded-sm border border-hairline">
               <table className="w-full text-left text-sm">
                 <thead>
@@ -128,7 +153,7 @@ export default function Cases() {
                         <div className="flex items-center gap-2">
                           <button onClick={() => setSelectedCaseId(c.caseId)} className="rounded-sm border border-hairline p-1.5 text-ash hover:border-amber hover:text-amber transition-colors">👁</button>
                           {head ? (
-                            <CaseActionsMenu caseId={c.caseId} />
+                            <CaseActionsMenu caseData={c} onUpdated={fetchCases} />
                           ) : c.hasFiles ? (
                             <button
                               onClick={() => navigate(`/cases/${c.caseId}/files`)}
@@ -153,7 +178,6 @@ export default function Cases() {
             </div>
           </main>
         </div>
-        <PluginDrawer />
         {showNewCase && <NewCaseModal onClose={() => setShowNewCase(false)} />}
         {selectedCaseId && (
           <CaseDetailModal caseId={selectedCaseId} onClose={() => setSelectedCaseId(null)} />
@@ -162,6 +186,6 @@ export default function Cases() {
           <UploadCaseFilesModal caseId={uploadCaseId} onClose={() => setUploadCaseId(null)} />
         )}
       </div>
-    </PluginDrawerProvider>
+    
   );
 }

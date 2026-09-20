@@ -41,6 +41,10 @@ def generate_timeline(org_id: str, case_id: str, window_minutes: int = SESSION_W
     try:
         case_uuid = _resolve_case_uuid(sb, org_id, case_id)
 
+        if window_minutes is None:
+            org_row = sb.table("organizations").select("default_correlation_window").eq("id", org_uuid).execute()
+            window_minutes = (org_row.data[0].get("default_correlation_window") if org_row.data else None) or 30
+
         events = _fetch_all_rows(sb, "events", "id, actor, host, timestamp", case_uuid)
 
         timed = [e for e in events if e["timestamp"]]

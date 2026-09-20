@@ -30,3 +30,21 @@
     background-repeat: repeat-y;
   }
 }
+
+:root {
+  --color-ink: 18 22 27;
+  --color-panel: 26 31 38;
+  --color-raised: 32 38 46;
+  --color-hairline: 43 51 60;
+  --color-ash: 139 147 160;
+  --color-paper: 233 231 226;
+}
+
+.light {
+  --color-ink: 247 245 241;
+  --color-panel: 255 255 255;
+  --color-raised: 240 237 231;
+  --color-hairline: 216 211 201;
+  --color-ash: 107 114 128;
+  --color-paper: 26 31 38;
+}

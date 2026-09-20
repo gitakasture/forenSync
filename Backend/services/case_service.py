@@ -54,6 +54,10 @@ def create_case(
     try:
         org_uuid = _resolve_org_uuid(sb, org_id)
 
+        if not priority:
+            org_row = sb.table("organizations").select("default_priority").eq("id", org_uuid).execute()
+            priority = (org_row.data[0].get("default_priority") if org_row.data else None) or "Medium Priority"
+
         creator_result = (
             sb.table("users")
             .select("id, name")
@@ -316,3 +320,124 @@ def get_case_detail(org_id: str, case_id: str) -> dict:
 
 #     except APIError as e:
 #         raise ServiceError(f"Database error: {e.message}")
+
+
+def update_case_details(org_id: str, case_id: str, name: str, description: str, priority: str) -> dict:
+    sb = _get_client()
+    try:
+        org_uuid = _resolve_org_uuid(sb, org_id)
+        case_result = sb.table("cases").select("id").eq("org_id", org_uuid).eq("case_id", case_id).execute()
+        if not case_result.data:
+            raise NotFoundError(f"Case '{case_id}' not found.")
+        case_uuid = case_result.data[0]["id"]
+
+        update_data = {}
+        if name:
+            update_data["name"] = name
+        if description is not None:
+            update_data["description"] = description
+        if priority:
+            update_data["priority"] = priority
+
+        sb.table("cases").update(update_data).eq("id", case_uuid).execute()
+
+        result = sb.table("cases").select("*").eq("id", case_uuid).execute()
+        return _build_display_case(sb, result.data[0])
+    except APIError as e:
+        raise ServiceError(f"Database error: {e.message}")
+
+
+def update_case_status(org_id: str, case_id: str, new_status: str) -> dict:
+    sb = _get_client()
+    try:
+        org_uuid = _resolve_org_uuid(sb, org_id)
+        case_result = sb.table("cases").select("id").eq("org_id", org_uuid).eq("case_id", case_id).execute()
+        if not case_result.data:
+            raise NotFoundError(f"Case '{case_id}' not found.")
+        case_uuid = case_result.data[0]["id"]
+
+        sb.table("cases").update({"status": new_status}).eq("id", case_uuid).execute()
+        return {"caseId": case_id, "status": new_status}
+    except APIError as e:
+        raise ServiceError(f"Database error: {e.message}")
+
+
+def get_case_investigators(org_id: str, case_id: str) -> list[dict]:
+    sb = _get_client()
+    try:
+        org_uuid = _resolve_org_uuid(sb, org_id)
+        case_result = sb.table("cases").select("id").eq("org_id", org_uuid).eq("case_id", case_id).execute()
+        if not case_result.data:
+            raise NotFoundError(f"Case '{case_id}' not found.")
+        case_uuid = case_result.data[0]["id"]
+
+        assignments = sb.table("case_investigators").select("user_id, status").eq("case_id", case_uuid).execute()
+        investigator_uuids = [a["user_id"] for a in (assignments.data or [])]
+        status_map = {a["user_id"]: a["status"] for a in (assignments.data or [])}
+
+        if not investigator_uuids:
+            return []
+
+        users_result = sb.table("users").select("id, user_id, name").in_("id", investigator_uuids).execute()
+        return [
+            {"id": u["user_id"], "name": u["name"], "assignmentStatus": status_map.get(u["id"], "pending")}
+            for u in (users_result.data or [])
+        ]
+    except APIError as e:
+        raise ServiceError(f"Database error: {e.message}")
+
+
+def add_case_investigator(org_id: str, case_id: str, investigator_user_id: str) -> dict:
+    sb = _get_client()
+    try:
+        org_uuid = _resolve_org_uuid(sb, org_id)
+        case_result = sb.table("cases").select("id, case_id, name").eq("org_id", org_uuid).eq("case_id", case_id).execute()
+        if not case_result.data:
+            raise NotFoundError(f"Case '{case_id}' not found.")
+        case_row = case_result.data[0]
+        case_uuid = case_row["id"]
+
+        inv_result = (
+            sb.table("users").select("id, name").eq("org_id", org_uuid)
+            .eq("user_id", investigator_user_id).eq("role", "investigator").execute()
+        )
+        if not inv_result.data:
+            raise NotFoundError(f"Investigator '{investigator_user_id}' not found.")
+        inv_uuid = inv_result.data[0]["id"]
+        inv_name = inv_result.data[0]["name"]
+
+        existing = sb.table("case_investigators").select("id").eq("case_id", case_uuid).eq("user_id", inv_uuid).execute()
+        if existing.data:
+            raise ConflictError(f"'{investigator_user_id}' is already assigned to this case.")
+
+        sb.table("case_investigators").insert({"case_id": case_uuid, "user_id": inv_uuid, "status": "pending"}).execute()
+        sb.table("notifications").insert({
+            "user_id": inv_uuid,
+            "text": f"You have been assigned to case {case_row['case_id']} - {case_row['name']}.",
+            "is_read": False,
+            "related_case_id": case_uuid,
+        }).execute()
+
+        return {"id": investigator_user_id, "name": inv_name, "assignmentStatus": "pending"}
+    except APIError as e:
+        raise ServiceError(f"Database error: {e.message}")
+
+
+def remove_case_investigator(org_id: str, case_id: str, investigator_user_id: str) -> dict:
+    sb = _get_client()
+    try:
+        org_uuid = _resolve_org_uuid(sb, org_id)
+        case_result = sb.table("cases").select("id").eq("org_id", org_uuid).eq("case_id", case_id).execute()
+        if not case_result.data:
+            raise NotFoundError(f"Case '{case_id}' not found.")
+        case_uuid = case_result.data[0]["id"]
+
+        inv_result = sb.table("users").select("id").eq("org_id", org_uuid).eq("user_id", investigator_user_id).execute()
+        if not inv_result.data:
+            raise NotFoundError(f"Investigator '{investigator_user_id}' not found.")
+        inv_uuid = inv_result.data[0]["id"]
+
+        sb.table("case_investigators").delete().eq("case_id", case_uuid).eq("user_id", inv_uuid).execute()
+        return {"removed": True}
+    except APIError as e:
+        raise ServiceError(f"Database error: {e.message}")
