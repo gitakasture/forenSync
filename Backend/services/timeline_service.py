@@ -33,13 +33,13 @@ def _resolve_case_uuid(sb, org_id, case_id):
     case_result = sb.table("cases").select("id").eq("org_id", org_uuid).eq("case_id", case_id).execute()
     if not case_result.data:
         raise NotFoundError(f"Case '{case_id}' not found.")
-    return case_result.data[0]["id"]
+    return case_result.data[0]["id"], org_uuid
 
 
 def generate_timeline(org_id: str, case_id: str, window_minutes: int = SESSION_WINDOW_MINUTES) -> dict:
     sb = _get_client()
     try:
-        case_uuid = _resolve_case_uuid(sb, org_id, case_id)
+        case_uuid, org_uuid = _resolve_case_uuid(sb, org_id, case_id)
 
         if window_minutes is None:
             org_row = sb.table("organizations").select("default_correlation_window").eq("id", org_uuid).execute()
@@ -93,7 +93,7 @@ def generate_timeline(org_id: str, case_id: str, window_minutes: int = SESSION_W
 def get_timeline(org_id: str, case_id: str, filters: dict) -> dict:
     sb = _get_client()
     try:
-        case_uuid = _resolve_case_uuid(sb, org_id, case_id)
+        case_uuid, org_uuid = _resolve_case_uuid(sb, org_id, case_id) 
 
         query = sb.table("events").select("*").eq("case_id", case_uuid)
         for field in ("actor", "host", "source", "action"):
