@@ -20,6 +20,13 @@ export default function InvestigatorSettings() {
   });
   const [requestSubmitted, setRequestSubmitted] = useState(false);
 
+  // Notification preferences state (frontend-only for now)
+  const [notificationPreferences, setNotificationPreferences] = useState({
+    caseAssignments: true,
+    fileUploadReminders: true,
+    timelineGeneration: true,
+  });
+
   const handleSubmitRequest = () => {
     // In a real implementation, this would call a backend API
     // For now, we'll just store it in local state and show confirmation
@@ -37,6 +44,15 @@ export default function InvestigatorSettings() {
         reason: "",
       });
     }, 3000);
+  };
+
+  const toggleNotification = (key) => {
+    setNotificationPreferences(prev => ({
+      ...prev,
+      [key]: !prev[key]
+    }));
+    // TODO: When backend is ready, persist to API
+    // api.post("/notification-preferences", { ...notificationPreferences, [key]: !notificationPreferences[key] });
   };
 
   const isFormValid = 
@@ -290,44 +306,59 @@ export default function InvestigatorSettings() {
                   Notifications
                 </h2>
                 <div className="space-y-3">
-                  <div className="flex items-center justify-between">
-                    <div>
-                      <p className="text-sm text-paper">Case Assignments</p>
+                  <div className="flex items-center justify-between rounded-sm border border-hairline bg-ink px-4 py-3">
+                    <div className="flex-1">
+                      <p className="text-sm font-medium text-paper">Case Assignments</p>
                       <p className="text-xs text-ash">
                         Notify when assigned to new cases
                       </p>
                     </div>
-                    <input
-                      type="checkbox"
-                      defaultChecked
-                      className="h-4 w-4 rounded border-hairline bg-ink text-amber focus:ring-amber"
-                    />
+                    <button
+                      onClick={() => toggleNotification('caseAssignments')}
+                      className={`ml-4 rounded-sm px-4 py-1.5 text-xs font-medium transition-colors ${
+                        notificationPreferences.caseAssignments
+                          ? 'bg-amber text-ink hover:bg-amber-hover'
+                          : 'border border-hairline bg-raised text-ash hover:border-amber hover:text-amber'
+                      }`}
+                    >
+                      {notificationPreferences.caseAssignments ? 'Enabled' : 'Disabled'}
+                    </button>
                   </div>
-                  <div className="flex items-center justify-between">
-                    <div>
-                      <p className="text-sm text-paper">File Upload Reminders</p>
+                  <div className="flex items-center justify-between rounded-sm border border-hairline bg-ink px-4 py-3">
+                    <div className="flex-1">
+                      <p className="text-sm font-medium text-paper">File Upload Reminders</p>
                       <p className="text-xs text-ash">
                         Remind to upload case files
                       </p>
                     </div>
-                    <input
-                      type="checkbox"
-                      defaultChecked
-                      className="h-4 w-4 rounded border-hairline bg-ink text-amber focus:ring-amber"
-                    />
+                    <button
+                      onClick={() => toggleNotification('fileUploadReminders')}
+                      className={`ml-4 rounded-sm px-4 py-1.5 text-xs font-medium transition-colors ${
+                        notificationPreferences.fileUploadReminders
+                          ? 'bg-amber text-ink hover:bg-amber-hover'
+                          : 'border border-hairline bg-raised text-ash hover:border-amber hover:text-amber'
+                      }`}
+                    >
+                      {notificationPreferences.fileUploadReminders ? 'Enabled' : 'Disabled'}
+                    </button>
                   </div>
-                  <div className="flex items-center justify-between">
-                    <div>
-                      <p className="text-sm text-paper">Timeline Generation</p>
+                  <div className="flex items-center justify-between rounded-sm border border-hairline bg-ink px-4 py-3">
+                    <div className="flex-1">
+                      <p className="text-sm font-medium text-paper">Timeline Generation</p>
                       <p className="text-xs text-ash">
                         Notify when timeline is ready
                       </p>
                     </div>
-                    <input
-                      type="checkbox"
-                      defaultChecked
-                      className="h-4 w-4 rounded border-hairline bg-ink text-amber focus:ring-amber"
-                    />
+                    <button
+                      onClick={() => toggleNotification('timelineGeneration')}
+                      className={`ml-4 rounded-sm px-4 py-1.5 text-xs font-medium transition-colors ${
+                        notificationPreferences.timelineGeneration
+                          ? 'bg-amber text-ink hover:bg-amber-hover'
+                          : 'border border-hairline bg-raised text-ash hover:border-amber hover:text-amber'
+                      }`}
+                    >
+                      {notificationPreferences.timelineGeneration ? 'Enabled' : 'Disabled'}
+                    </button>
                   </div>
                 </div>
               </section>

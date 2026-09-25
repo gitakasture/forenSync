@@ -129,13 +129,10 @@
 
 
 import { useNavigate } from "react-router-dom";
-import { getUser, isOrgHead } from "../utils/auth";
+import { getUser, isOrgHead, logout } from "../utils/auth";
 import { useState, useEffect } from "react";
 import api from "../utils/api";
-import ProfileSettingsModal from "./ProfileSettingsModal";
 import ManageInvestigatorsModal from "./ManageInvestigatorsModal";
-import SystemSettingsModal from "./SystemSettingsModal";
-import LogoutConfirmModal from "./LogoutConfirmModal";
 
 export default function TopBar({ onNewCase }) {
   const navigate = useNavigate();
@@ -143,10 +140,9 @@ export default function TopBar({ onNewCase }) {
   const user = getUser();
 
   const [notifOpen, setNotifOpen] = useState(false);
-  const [profileOpen, setProfileOpen] = useState(false);
   const [notifications, setNotifications] = useState([]);
   const [menuOpen, setMenuOpen] = useState(false);
-  const [activeModal, setActiveModal] = useState(null); // "profile" | "investigators" | "settings" | "logout"
+  const [activeModal, setActiveModal] = useState(null); // "investigators"
 
   const fetchNotifications = () => {
     if (!user?.orgId || !user?.investigatorId) return;
@@ -172,11 +168,6 @@ export default function TopBar({ onNewCase }) {
     } catch {
       // silently ignore for now
     }
-  };
-
-  const handleLogout = () => {
-    logout();
-    navigate("/login");
   };
 
   return (
@@ -247,10 +238,13 @@ export default function TopBar({ onNewCase }) {
           {menuOpen && (
             <div className="absolute right-0 top-11 z-50 w-52 overflow-hidden rounded-sm border border-hairline bg-panel shadow-2xl">
               <button
-                onClick={() => { setActiveModal("profile"); setMenuOpen(false); }}
+                onClick={() => { 
+                  setMenuOpen(false);
+                  navigate(head ? "/settings" : "/investigator-settings");
+                }}
                 className="block w-full px-4 py-2.5 text-left text-sm text-paper hover:bg-raised transition-colors"
               >
-                Profile Settings
+                ⚙ Settings
               </button>
               {head && (
                 <button
@@ -260,30 +254,22 @@ export default function TopBar({ onNewCase }) {
                   Manage Investigators
                 </button>
               )}
-              {head && (
-                <button
-                  onClick={() => { setActiveModal("settings"); setMenuOpen(false); }}
-                  className="block w-full px-4 py-2.5 text-left text-sm text-paper hover:bg-raised transition-colors"
-                >
-                  System Settings
-                </button>
-              )}
               <button
-                onClick={() => { setActiveModal("logout"); setMenuOpen(false); }}
+                onClick={() => { 
+                  setMenuOpen(false);
+                  logout();
+                  navigate("/login");
+                }}
                 className="block w-full px-4 py-2.5 text-left text-sm text-danger hover:bg-raised transition-colors"
               >
-                Logout
-
+                ⏏ Logout
               </button>
             </div>
           )}
         </div>
       </div>
 
-      {activeModal === "profile" && <ProfileSettingsModal onClose={() => setActiveModal(null)} />}
-      {activeModal === "investigators" && <ManageInvestigatorsModal onClose={() => setActiveModal(null)} />}
-      {activeModal === "settings" && <SystemSettingsModal onClose={() => setActiveModal(null)} />}
-      {activeModal === "logout" && <LogoutConfirmModal onClose={() => setActiveModal(null)} />}
+      {head && activeModal === "investigators" && <ManageInvestigatorsModal onClose={() => setActiveModal(null)} />}
     </div>
   );
 }
