@@ -8,6 +8,7 @@ import api from "../utils/api";
 import { getUser } from "../utils/auth";
 import TimelineSwimlane from "../components/TimelineSwimlane";
 import LoadingOverlay from "../components/LoadingOverlay";
+import ActivityHistogram from "../components/ActivityHistogram";
 
 function formatTime(ts) {
   if (!ts) return "Unknown";
@@ -260,6 +261,15 @@ export default function TimelinePage() {
               >
                 Timeline View
               </button>
+
+              <button
+                onClick={() => setViewMode("graph")}
+                className={`rounded-sm border px-3 py-1.5 text-xs transition-colors ${
+                  viewMode === "graph" ? "border-amber bg-amber/10 text-amber" : "border-hairline text-ash hover:border-amber hover:text-amber"
+                }`}
+              >
+                Acitivity chart
+              </button>
             </div>
 
             {loading && <p className="text-sm text-ash">Loading…</p>}
@@ -322,9 +332,9 @@ export default function TimelinePage() {
             )}
 
 
-            {!loading && viewMode === "swimlane" && (
+            {!loading && viewMode === "graph" && (
               <>
-                <TimelineSwimlane events={events} onSelectEvent={setSelectedEvent} />
+                 <ActivityHistogram events={events} onSelectEvent={setSelectedEvent} />
 
                 {selectedEvent && (
                   <div className="mt-4 rounded-sm border border-hairline bg-panel p-4">
