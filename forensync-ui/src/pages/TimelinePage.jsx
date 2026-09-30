@@ -15,10 +15,35 @@ function formatTime(ts) {
   return ts.replace("T", " ").replace("Z", " UTC");
 }
 
+function escapeCSVValue(value) {
+  if (value === null || value === undefined) return "";
+  const stringValue = String(value);
+  // If value contains comma, quote, or newline, wrap in quotes and escape existing quotes
+  if (stringValue.includes(",") || stringValue.includes('"') || stringValue.includes("\n")) {
+    return `"${stringValue.replace(/"/g, '""')}"`;
+  }
+  return stringValue;
+}
+
 function toCSV(events) {
-  const headers = ["timestamp", "source", "host", "actor", "action", "object", "result", "session_id"];
-  const rows = events.map((e) => headers.map((h) => `"${(e[h] ?? "").toString().replace(/"/g, '""')}"`).join(","));
-  return [headers.join(","), ...rows].join("\n");
+  // Match the visible table columns: timestamp, source, host, actor, action, object, result
+  const headers = ["Timestamp", "Source", "Host", "Actor", "Action", "Object", "Result"];
+  const headerRow = headers.join(",");
+  
+  const dataRows = events.map((e) => {
+    const values = [
+      formatTime(e.timestamp),
+      e.source || "",
+      e.host || "",
+      e.actor || "",
+      e.action || "",
+      e.object || "",
+      e.result || ""
+    ];
+    return values.map(escapeCSVValue).join(",");
+  });
+  
+  return [headerRow, ...dataRows].join("\n");
 }
 
 export default function TimelinePage() {
@@ -152,14 +177,6 @@ export default function TimelinePage() {
                 <h1 className="font-display text-lg font-medium text-paper">Timeline — {caseId}</h1>
                 <p className="text-sm text-ash">Correlated events across all uploaded log sources.</p>
               </div>
-              <button
-                onClick={handleExport}
-                disabled={events.length === 0}
-                className="rounded-sm border border-hairline px-4 py-2 text-sm text-paper transition-colors hover:border-amber hover:text-amber disabled:opacity-40"
-              >
-                Export CSV
-              </button>
-
               <div className="flex items-center gap-2">
                 {savedViews.length > 0 && (
                   <select
